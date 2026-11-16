@@ -1,57 +1,824 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SHOP ACC LIÊN QUÂN UY TÍN - GIAO DỊCH TỰ ĐỘNG 24/7</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        gaming: ['Chakra Petch', 'sans-serif'],
-                    },
-                    colors: {
-                        darkbg: '#090d16',
-                        cardbg: '#111827',
-                        gold: '#f59e0b',
-                        cyan: '#06b6d4'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         body {
             background-color: #090d16;
             color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
             background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #090d16 70%);
             min-height: 100vh;
         }
-        .gaming-border {
+        .font-gaming { font-family: 'Chakra Petch', sans-serif; }
+        .gaming-card {
+            background-color: #111827;
             border: 1px solid rgba(245, 158, 11, 0.25);
-            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
         }
-        .gaming-border:hover {
+        .gaming-card:hover {
             border-color: rgba(245, 158, 11, 0.7);
             box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
         }
+        .text-gold { color: #f59e0b; }
+        .bg-gold { background-color: #f59e0b; }
+        .btn-gold {
+            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            color: #090d16;
+            font-weight: 700;
+            border: none;
+        }
+        .btn-gold:hover {
+            background: linear-gradient(135deg, #fbbf24, #f97316);
+            color: #090d16;
+        }
+        .form-control, .form-select {
+            background-color: #030712;
+            border-color: #374151;
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #030712;
+            border-color: #f59e0b;
+            color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.25);
+        }
+        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #090d16; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
     </style>
 </head>
-<body class="antialiased selection:bg-amber-500 selection:text-black">
+<body>
 
     <!-- NAVBAR -->
-    <nav class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo({top:0, behavior:'smooth'})">
-                    <div class="w-
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#" onclick="window.scrollTo({top:0, behavior:'smooth'})">
+                <div class="bg-warning text-dark p-2 rounded fw-bold fs-5 shadow"><i class="fa-solid fa-crown"></i></div>
+                <div>
+                    <span id="nav-shop-name" class="font-gaming fw-bold fs-4 text-warning">SHOP LIÊN QUÂN VIP</span>
+                    <p class="small text-muted mb-0" style="font-size: 11px;">Uy Tín • Trắng Thông Tin • Giá Rẻ</p>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a id="nav-zalo-btn" href="#" target="_blank" class="btn btn-outline-primary btn-sm d-none d-sm-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-comment-dots"></i> Hỗ Trợ Zalo
+                </a>
+                <button onclick="openAdminModal()" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 fw-bold">
+                    <i class="fa-solid fa-user-shield"></i> Quản Lý Shop
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO BANNER -->
+    <header class="py-5 border-bottom border-secondary bg-dark bg-opacity-25">
+        <div class="container text-center py-4">
+            <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill mb-3">
+                <span class="spinner-grow spinner-grow-sm text-success me-1" role="status"></span>
+                Hệ Thống Cập Nhật Acc Liên Tục 24/7
+            </span>
+            <h1 class="font-gaming fw-bold display-6 display-md-4 mb-3">KHO TÀI KHOẢN <span class="text-warning">LIÊN QUÂN MOBILE</span></h1>
+            <p class="text-muted mx-auto mb-4" style="max-width: 700px;">
+                Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger chỉ trong 3 phút.
+            </p>
+
+            <div class="row g-2 justify-content-center max-w-md mx-auto bg-dark border border-secondary p-3 rounded-4" style="max-width: 450px;">
+                <div class="col-4 border-end border-secondary">
+                    <div id="stat-total" class="font-gaming fs-4 fw-bold text-white">0</div>
+                    <div class="small text-muted">Tổng Số Acc</div>
+                </div>
+                <div class="col-4 border-end border-secondary">
+                    <div id="stat-available" class="font-gaming fs-4 fw-bold text-success">0</div>
+                    <div class="small text-muted">Còn Hàng</div>
+                </div>
+                <div class="col-4">
+                    <div id="stat-sold" class="font-gaming fs-4 fw-bold text-warning">0</div>
+                    <div class="small text-muted">Đã Bán</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="container py-5">
+        
+        <!-- FILTER BAR -->
+        <div class="bg-dark border border-secondary p-4 rounded-4 mb-4 shadow-lg">
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-black border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="filter-search" oninput="renderAccounts()" placeholder="Tìm theo mã số, tên skin..." class="form-control">
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <select id="filter-price" onchange="renderAccounts()" class="form-select">
+                        <option value="all">💰 Tất cả mức giá</option>
+                        <option value="under100">Dưới 100.000đ</option>
+                        <option value="100to300">100.000đ - 300.000đ</option>
+                        <option value="300to700">300.000đ - 700.000đ</option>
+                        <option value="above700">Trên 700.000đ (Acc VIP)</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <select id="filter-rank" onchange="renderAccounts()" class="form-select">
+                        <option value="all">🏆 Tất cả mức Rank</option>
+                        <option value="Cao Thủ">Cao Thủ / Chiến Tướng</option>
+                        <option value="Tinh Anh">Tinh Anh</option>
+                        <option value="Kim Cương">Kim Cương</option>
+                        <option value="Bạch Kim">Bạch Kim trở xuống</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <select id="filter-status" onchange="renderAccounts()" class="form-select">
+                        <option value="all">📌 Trạng thái</option>
+                        <option value="available">✅ Còn hàng</option>
+                        <option value="sold">❌ Đã bán</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCOUNT GRID -->
+        <div id="accounts-grid" class="row g-4"></div>
+
+        <!-- EMPTY STATE -->
+        <div id="empty-state" class="d-none text-center py-5 bg-dark border border-secondary rounded-4">
+            <i class="fa-solid fa-box-open fa-3x text-muted mb-3"></i>
+            <h5>Không tìm thấy tài khoản phù hợp</h5>
+            <p class="text-muted small">Hãy thử tìm kiếm với từ khóa khác nhé!</p>
+            <button onclick="resetFilters()" class="btn btn-warning btn-sm fw-bold">Đặt Lại Bộ Lọc</button>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-top border-secondary bg-black py-4 mt-5">
+        <div class="container d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
+            <div>
+                <p id="footer-shop-name" class="font-gaming fw-bold text-warning mb-1">SHOP LIÊN QUÂN VIP</p>
+                <p class="small text-muted mb-0">Giao dịch trung gian uy tín • Hỗ trợ đổi mật khẩu 24/7.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a id="footer-zalo" href="#" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-phone me-1"></i> Zalo</a>
+                <a id="footer-fb" href="#" target="_blank" class="btn btn-info btn-sm text-white"><i class="fa-brands fa-facebook-messenger me-1"></i> Messenger</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL CHI TIẾT & MUA HÀNG -->
+    <div class="modal fade" id="detailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark border border-secondary text-white">
+                <div class="modal-header border-secondary bg-black">
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="modal-code" class="badge bg-warning text-dark font-gaming fs-6">#LQ01</span>
+                        <h5 id="modal-title" class="modal-title fs-6 mb-0 text-truncate" style="max-width: 400px;">Chi Tiết Acc</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-2 mb-4 text-center">
+                        <div class="col-3">
+                            <div class="bg-black border border-secondary p-2 rounded-3">
+                                <div class="small text-muted" style="font-size: 11px;">Mức Rank</div>
+                                <div id="modal-rank" class="fw-bold text-warning small">Cao Thủ</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="bg-black border border-secondary p-2 rounded-3">
+                                <div class="small text-muted" style="font-size: 11px;">Số Tướng</div>
+                                <div id="modal-heroes" class="fw-bold small">115 Tướng</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="bg-black border border-secondary p-2 rounded-3">
+                                <div class="small text-muted" style="font-size: 11px;">Trang Phục</div>
+                                <div id="modal-skins" class="fw-bold text-info small">240 Skin</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="bg-black border border-secondary p-2 rounded-3">
+                                <div class="small text-muted" style="font-size: 11px;">Thông Tin</div>
+                                <div id="modal-info" class="fw-bold text-success small">Trắng TT</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-black border border-secondary p-3 rounded-3 mb-4">
+                        <h6 class="text-warning small fw-bold text-uppercase mb-2"><i class="fa-solid fa-list-check me-1"></i> Chi Tiết Skin VIP & Ghi Chú</h6>
+                        <p id="modal-desc" class="small text-secondary mb-0" style="white-space: pre-line;"></p>
+                    </div>
+
+                    <div class="bg-gradient border border-warning border-opacity-50 p-3 rounded-3 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <div class="small text-muted">Giá Bán Công Khai:</div>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <span id="modal-price" class="font-gaming fs-3 fw-bold text-warning">350.000đ</span>
+                                <span id="modal-old-price" class="small text-muted text-decoration-line-through">500.000đ</span>
+                            </div>
+                        </div>
+                        <div id="modal-buy-actions" class="d-flex gap-2 w-100 w-sm-auto">
+                            <button onclick="copyOrderAndOpen('zalo')" class="btn btn-primary btn-sm flex-fill fw-bold"><i class="fa-solid fa-comment-dots me-1"></i> Chốt Zalo</button>
+                            <button onclick="copyOrderAndOpen('fb')" class="btn btn-info btn-sm text-white flex-fill fw-bold"><i class="fa-brands fa-facebook-messenger me-1"></i> Messenger</button>
+                        </div>
+                    </div>
+
+                    <h6 class="small fw-bold mb-3"><i class="fa-regular fa-images text-warning me-1"></i> Ảnh Chụp Kho Đồ & Tướng (Bấm để phóng to)</h6>
+                    <div id="modal-gallery" class="row g-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LIGHTBOX ZOOM -->
+    <div class="modal fade" id="lightboxModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen m-0 bg-black bg-opacity-95 d-flex align-items-center justify-content-center">
+            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-4 z-3" data-bs-dismiss="modal"></button>
+            <img id="lightbox-img" src="" class="img-fluid rounded shadow" style="max-height: 90vh;">
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL MODAL -->
+    <div class="modal fade" id="adminModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark border border-warning text-white">
+                <div class="modal-header border-secondary bg-black">
+                    <h5 class="modal-title font-gaming text-warning fs-5"><i class="fa-solid fa-user-shield me-2"></i> HỆ THỐNG QUẢN LÝ SHOP (ADMIN)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Admin Login View -->
+                <div id="admin-login-view" class="modal-body p-5 text-center" style="max-width: 450px; margin: 0 auto;">
+                    <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 p-4 mb-3 text-warning fs-3 d-inline-block">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h5>Đăng Nhập Chủ Shop</h5>
+                    <p class="small text-muted mb-3">Mật khẩu mặc định: <code class="text-warning fw-bold">123456</code></p>
+                    <input type="password" id="admin-pass-input" onkeydown="if(event.key==='Enter') checkAdminLogin()" placeholder="Nhập mật khẩu..." class="form-control text-center mb-3">
+                    <button onclick="checkAdminLogin()" class="btn btn-gold w-100 py-2">Mở Bảng Điều Khiển</button>
+                </div>
+
+                <!-- Admin Dashboard View -->
+                <div id="admin-dashboard-view" class="d-none modal-body p-4">
+                    <div class="bg-success bg-opacity-15 border border-success border-opacity-50 p-3 rounded-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4">
+                        <div>
+                            <h6 class="text-success fw-bold mb-1"><i class="fa-brands fa-github me-1"></i> Cập Nhật Lên GitHub</h6>
+                            <p class="small text-secondary mb-0">Sau khi thêm/sửa acc, hãy bấm nút bên cạnh để copy code rồi dán đè vào file `index.html` trên GitHub!</p>
+                        </div>
+                        <button onclick="exportFullHtmlForGithub()" class="btn btn-success btn-sm fw-bold text-nowrap"><i class="fa-solid fa-copy me-1"></i> Copy Code Mới</button>
+                    </div>
+
+                    <ul class="nav nav-tabs border-secondary mb-4">
+                        <li class="nav-item">
+                            <button onclick="switchAdminTab('manage')" id="tab-btn-manage" class="nav-link active bg-transparent text-warning border-secondary fw-bold">📦 Quản Lý Acc</button>
+                        </li>
+                        <li class="nav-item">
+                            <button onclick="switchAdminTab('settings')" id="tab-btn-settings" class="nav-link bg-transparent text-muted border-0 fw-bold">⚙️ Cài Đặt Shop</button>
+                        </li>
+                    </ul>
+
+                    <!-- Manage Tab -->
+                    <div id="admin-tab-manage">
+                        <div class="bg-black border border-secondary p-3 rounded-3 mb-4">
+                            <h6 id="form-acc-heading" class="text-warning small fw-bold mb-3">➕ Đăng Tài Khoản Mới</h6>
+                            <input type="hidden" id="edit-acc-index" value="-1">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="small text-muted mb-1">Mã Acc *</label>
+                                    <input type="text" id="inp-code" placeholder="VD: #LQ05" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="small text-muted mb-1">Tiêu Đề *</label>
+                                    <input type="text" id="inp-title" placeholder="VD: Acc Nakroth Vệ Thần..." class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-muted mb-1">Giá Bán (VNĐ) *</label>
+                                    <input type="number" id="inp-price" placeholder="350000" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-muted mb-1">Giá Gốc Gạch Ngang</label>
+                                    <input type="number" id="inp-old-price" placeholder="500000" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="small text-muted mb-1">Rank</label>
+                                    <select id="inp-rank" class="form-select form-select-sm">
+                                        <option value="Cao Thủ">Cao Thủ</option>
+                                        <option value="Tinh Anh">Tinh Anh</option>
+                                        <option value="Kim Cương">Kim Cương</option>
+                                        <option value="Bạch Kim">Bạch Kim</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="small text-muted mb-1">Tướng</label>
+                                    <input type="number" id="inp-heroes" placeholder="115" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="small text-muted mb-1">Skin</label>
+                                    <input type="number" id="inp-skins" placeholder="200" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="small text-muted mb-1">Tình Trạng Thông Tin</label>
+                                    <input type="text" id="inp-info" value="Trắng thông tin" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="small text-muted mb-1">Danh Sách Link Ảnh (Mỗi link 1 dòng)</label>
+                                    <textarea id="inp-images" rows="2" placeholder="https://..." class="form-control form-control-sm font-monospace"></textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="small text-muted mb-1">Mô Tả Chi Tiết Skin VIP</label>
+                                    <textarea id="inp-desc" rows="2" placeholder="Chi tiết..." class="form-control form-control-sm"></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-3 d-flex gap-2">
+                                <button onclick="saveAccountFromForm()" class="btn btn-gold btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu Acc</button>
+                                <button onclick="resetAccountForm()" id="btn-cancel-edit" class="btn btn-outline-secondary btn-sm d-none">Hủy</button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive bg-black border border-secondary rounded-3">
+                            <table class="table table-dark table-hover table-sm align-middle mb-0 small">
+                                <thead>
+                                    <tr>
+                                        <th class="p-3">Mã</th>
+                                        <th class="p-3">Tiêu Đề</th>
+                                        <th class="p-3">Giá</th>
+                                        <th class="p-3">Trạng Thái</th>
+                                        <th class="p-3 text-end">Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-acc-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div id="admin-tab-settings" class="d-none bg-black border border-secondary p-4 rounded-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-1">Tên Shop</label>
+                                <input type="text" id="cfg-shop-name" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-1">Số Zalo Chốt Đơn</label>
+                                <input type="text" id="cfg-zalo" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-1">Link Messenger</label>
+                                <input type="text" id="cfg-fb" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-1">Mật Khẩu Admin Mới</label>
+                                <input type="text" id="cfg-pass" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                        <button onclick="saveShopSettings()" class="btn btn-gold btn-sm mt-3">Lưu Cài Đặt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-bg-dark border-warning" role="alert">
+            <div class="d-flex">
+                <div id="toast-msg" class="toast-body small fw-bold">Thông báo thành công!</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SHOP DATA & LOGIC SCRIPT -->
+    <script id="shop-data-script">
+        let SHOP_CONFIG = {
+            shopName: "SHOP LIÊN QUÂN VIP",
+            zaloPhone: "0987654321",
+            fbMessenger: "https://m.me/",
+            adminPass: "123456"
+        };
+
+        let ACCOUNTS_DATA = [
+            {
+                code: "#LQ01",
+                title: "Acc Nakroth Thứ Nguyên Vệ Thần + Tulen Chí Tôn Kiếm Tiên",
+                price: 650000,
+                oldPrice: 900000,
+                rank: "Cao Thủ",
+                heroes: 118,
+                skins: 312,
+                info: "Trắng thông tin",
+                sold: false,
+                images: [
+                    "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=900&q=80",
+                    "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=900&q=80"
+                ],
+                desc: "• Tài khoản trắng thông tin 100%, đổi mật khẩu & gắn SĐT ngay lập tức.\n• Sở hữu dàn skin SSS & SS hữu hạn: Nakroth Thứ Nguyên Vệ Thần, Tulen Chí Tôn Kiếm Tiên.\n• Full 10 bảng ngọc cấp 3 chuẩn meta."
+            },
+            {
+                code: "#LQ02",
+                title: "Acc Violet Vệ Thần + Florentino Tinh Hệ Giá Học Sinh",
+                price: 250000,
+                oldPrice: 380000,
+                rank: "Tinh Anh",
+                heroes: 95,
+                skins: 168,
+                info: "Trắng thông tin",
+                sold: false,
+                images: [
+                    "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=900&q=80"
+                ],
+                desc: "• Acc ngon bổ rẻ cho anh em leo rank.\n• Skin nổi bật: Violet Thứ Nguyên Vệ Thần, Florentino Tinh Hệ."
+            }
+        ];
+    </script>
+
+    <script>
+        let currentViewingAccount = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            applyShopConfig();
+            renderAccounts();
+        });
+
+        function applyShopConfig() {
+            document.title = `${SHOP_CONFIG.shopName} - Shop Bán Acc Liên Quân Uy Tín`;
+            document.getElementById('nav-shop-name').textContent = SHOP_CONFIG.shopName;
+            document.getElementById('footer-shop-name').textContent = SHOP_CONFIG.shopName;
+            
+            const zaloUrl = `https://zalo.me/${SHOP_CONFIG.zaloPhone.replace(/\D/g, '')}`;
+            document.getElementById('nav-zalo-btn').href = zaloUrl;
+            document.getElementById('footer-zalo').href = zaloUrl;
+            document.getElementById('footer-fb').href = SHOP_CONFIG.fbMessenger;
+        }
+
+        function formatCurrency(num) {
+            return Number(num).toLocaleString('vi-VN') + 'đ';
+        }
+
+        function showToast(msg) {
+            document.getElementById('toast-msg').textContent = msg;
+            const toast = new bootstrap.Toast(document.getElementById('liveToast'));
+            toast.show();
+        }
+
+        function renderAccounts() {
+            const grid = document.getElementById('accounts-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            const search = document.getElementById('filter-search').value.toLowerCase().trim();
+            const priceFilter = document.getElementById('filter-price').value;
+            const rankFilter = document.getElementById('filter-rank').value;
+            const statusFilter = document.getElementById('filter-status').value;
+
+            document.getElementById('stat-total').textContent = ACCOUNTS_DATA.length;
+            document.getElementById('stat-available').textContent = ACCOUNTS_DATA.filter(a => !a.sold).length;
+            document.getElementById('stat-sold').textContent = ACCOUNTS_DATA.filter(a => a.sold).length;
+
+            const filtered = ACCOUNTS_DATA.filter(acc => {
+                const matchSearch = !search || 
+                    acc.code.toLowerCase().includes(search) || 
+                    acc.title.toLowerCase().includes(search) || 
+                    acc.desc.toLowerCase().includes(search);
+
+                let matchPrice = true;
+                if (priceFilter === 'under100') matchPrice = acc.price < 100000;
+                else if (priceFilter === '100to300') matchPrice = acc.price >= 100000 && acc.price <= 300000;
+                else if (priceFilter === '300to700') matchPrice = acc.price > 300000 && acc.price <= 700000;
+                else if (priceFilter === 'above700') matchPrice = acc.price > 700000;
+
+                const matchRank = rankFilter === 'all' || acc.rank.toLowerCase().includes(rankFilter.toLowerCase());
+
+                let matchStatus = true;
+                if (statusFilter === 'available') matchStatus = !acc.sold;
+                else if (statusFilter === 'sold') matchStatus = acc.sold;
+
+                return matchSearch && matchPrice && matchRank && matchStatus;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('d-none');
+                return;
+            }
+
+            emptyState.classList.add('d-none');
+            grid.innerHTML = filtered.map((acc) => {
+                const realIndex = ACCOUNTS_DATA.indexOf(acc);
+                const coverImg = (acc.images && acc.images.length > 0) ? acc.images[0] : 'https://via.placeholder.com/600x340?text=No+Image';
+                
+                return `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card gaming-card h-100 rounded-4 overflow-hidden text-white ${acc.sold ? 'opacity-75' : ''}">
+                        <div class="position-relative ratio ratio-16x9 bg-black cursor-pointer" onclick="openDetailModal(${realIndex})" style="cursor: pointer;">
+                            <img src="${coverImg}" alt="${acc.title}" class="w-100 h-100 object-fit-cover">
+                            <span class="position-absolute top-0 start-0 m-3 badge bg-black border border-warning text-warning font-gaming">
+                                MÃ: ${acc.code}
+                            </span>
+                            <span class="position-absolute bottom-0 end-0 m-3 badge bg-black bg-opacity-75 text-light">
+                                <i class="fa-regular fa-images me-1"></i>${acc.images.length} ảnh
+                            </span>
+                            ${acc.sold ? `
+                            <div class="position-absolute inset-0 bg-black bg-opacity-75 d-flex align-items-center justify-content-center">
+                                <span class="badge bg-danger fs-5 border border-white px-4 py-2 shadow-lg text-uppercase fw-bold" style="transform: rotate(-6deg);">ĐÃ BÁN</span>
+                            </div>` : ''}
+                        </div>
+
+                        <div class="card-body d-flex flex-column justify-content-between p-4">
+                            <div>
+                                <h5 class="card-title fs-6 fw-bold mb-3 text-truncate-2" onclick="openDetailModal(${realIndex})" style="cursor: pointer; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${acc.title}
+                                </h5>
+
+                                <div class="row g-2 small text-secondary bg-black border border-secondary p-2 rounded-3 mb-3">
+                                    <div class="col-6"><i class="fa-solid fa-trophy text-warning me-1"></i> Rank: <strong class="text-white">${acc.rank}</strong></div>
+                                    <div class="col-6 text-truncate"><i class="fa-solid fa-shield-halved text-success me-1"></i> ${acc.info}</div>
+                                    <div class="col-6"><i class="fa-solid fa-users text-info me-1"></i> Tướng: <strong class="text-white">${acc.heroes}</strong></div>
+                                    <div class="col-6"><i class="fa-solid fa-shirt text-warning me-1"></i> Skin: <strong class="text-warning">${acc.skins}</strong></div>
+                                </div>
+                            </div>
+
+                            <div class="pt-3 border-top border-secondary d-flex align-items-center justify-content-between">
+                                <div>
+                                    ${acc.oldPrice ? `<div class="small text-muted text-decoration-line-through" style="font-size: 11px;">${formatCurrency(acc.oldPrice)}</div>` : ''}
+                                    <div class="font-gaming fs-5 fw-bold text-warning">${formatCurrency(acc.price)}</div>
+                                </div>
+                                <button onclick="openDetailModal(${realIndex})" class="btn ${acc.sold ? 'btn-secondary btn-sm' : 'btn-gold btn-sm'}">
+                                    ${acc.sold ? 'Xem Lại' : 'Chi Tiết & Mua'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-search').value = '';
+            document.getElementById('filter-price').value = 'all';
+            document.getElementById('filter-rank').value = 'all';
+            document.getElementById('filter-status').value = 'all';
+            renderAccounts();
+        }
+
+        function openDetailModal(index) {
+            const acc = ACCOUNTS_DATA[index];
+            currentViewingAccount = acc;
+
+            document.getElementById('modal-code').textContent = acc.code;
+            document.getElementById('modal-title').textContent = acc.title;
+            document.getElementById('modal-rank').textContent = acc.rank;
+            document.getElementById('modal-heroes').textContent = acc.heroes + ' Tướng';
+            document.getElementById('modal-skins').textContent = acc.skins + ' Skin';
+            document.getElementById('modal-info').textContent = acc.info;
+            document.getElementById('modal-desc').textContent = acc.desc || 'Không có ghi chú thêm.';
+            document.getElementById('modal-price').textContent = formatCurrency(acc.price);
+            
+            const oldPriceEl = document.getElementById('modal-old-price');
+            if (acc.oldPrice) {
+                oldPriceEl.textContent = formatCurrency(acc.oldPrice);
+                oldPriceEl.classList.remove('d-none');
+            } else {
+                oldPriceEl.classList.add('d-none');
+            }
+
+            const buyActions = document.getElementById('modal-buy-actions');
+            if (acc.sold) {
+                buyActions.innerHTML = `<span class="badge bg-danger bg-opacity-25 border border-danger text-danger w-100 py-2">Tài khoản này đã được bán</span>`;
+            } else {
+                buyActions.innerHTML = `
+                    <button onclick="copyOrderAndOpen('zalo')" class="btn btn-primary btn-sm flex-fill fw-bold"><i class="fa-solid fa-comment-dots me-1"></i> Chốt Zalo</button>
+                    <button onclick="copyOrderAndOpen('fb')" class="btn btn-info btn-sm text-white flex-fill fw-bold"><i class="fa-brands fa-facebook-messenger me-1"></i> Messenger</button>
+                `;
+            }
+
+            const gallery = document.getElementById('modal-gallery');
+            gallery.innerHTML = acc.images.map(url => `
+                <div class="col-6">
+                    <img src="${url}" onclick="openLightbox('${url}')" class="w-100 rounded-3 border border-secondary object-fit-cover" style="height: 150px; cursor: pointer;">
+                </div>
+            `).join('');
+
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+
+        function openLightbox(url) {
+            document.getElementById('lightbox-img').src = url;
+            new bootstrap.Modal(document.getElementById('lightboxModal')).show();
+        }
+
+        function copyOrderAndOpen(platform) {
+            if (!currentViewingAccount) return;
+            const msg = `Chào shop, mình muốn mua acc Liên Quân mã ${currentViewingAccount.code} (${currentViewingAccount.title}) - Giá ${formatCurrency(currentViewingAccount.price)}. Acc này còn không shop?`;
+            
+            navigator.clipboard.writeText(msg).then(() => {
+                showToast('Đã copy thông tin acc! Hãy dán vào khung chat để gửi chủ shop.');
+                setTimeout(() => {
+                    if (platform === 'zalo') {
+                        window.open(`https://zalo.me/${SHOP_CONFIG.zaloPhone.replace(/\D/g, '')}`, '_blank');
+                    } else {
+                        window.open(SHOP_CONFIG.fbMessenger, '_blank');
+                    }
+                }, 800);
+            });
+        }
+
+        let isAdminLoggedIn = false;
+
+        function openAdminModal() {
+            new bootstrap.Modal(document.getElementById('adminModal')).show();
+            if (isAdminLoggedIn) showAdminDashboard();
+        }
+
+        function checkAdminLogin() {
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === SHOP_CONFIG.adminPass) {
+                isAdminLoggedIn = true;
+                showAdminDashboard();
+                showToast('Đăng nhập thành công!');
+            } else {
+                alert('Sai mật khẩu! Mật khẩu mặc định là 123456');
+            }
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('admin-login-view').classList.add('d-none');
+            document.getElementById('admin-dashboard-view').classList.remove('d-none');
+            
+            document.getElementById('cfg-shop-name').value = SHOP_CONFIG.shopName;
+            document.getElementById('cfg-zalo').value = SHOP_CONFIG.zaloPhone;
+            document.getElementById('cfg-fb').value = SHOP_CONFIG.fbMessenger;
+            document.getElementById('cfg-pass').value = SHOP_CONFIG.adminPass;
+
+            renderAdminAccountList();
+        }
+
+        function switchAdminTab(tab) {
+            const manageTab = document.getElementById('admin-tab-manage');
+            const settingsTab = document.getElementById('admin-tab-settings');
+            const btnManage = document.getElementById('tab-btn-manage');
+            const btnSettings = document.getElementById('tab-btn-settings');
+
+            if (tab === 'manage') {
+                manageTab.classList.remove('d-none');
+                settingsTab.classList.add('d-none');
+                btnManage.className = 'nav-link active bg-transparent text-warning border-secondary fw-bold';
+                btnSettings.className = 'nav-link bg-transparent text-muted border-0 fw-bold';
+            } else {
+                manageTab.classList.add('d-none');
+                settingsTab.classList.remove('d-none');
+                btnSettings.className = 'nav-link active bg-transparent text-warning border-secondary fw-bold';
+                btnManage.className = 'nav-link bg-transparent text-muted border-0 fw-bold';
+            }
+        }
+
+        function renderAdminAccountList() {
+            const tbody = document.getElementById('admin-acc-list');
+            tbody.innerHTML = ACCOUNTS_DATA.map((acc, idx) => `
+                <tr>
+                    <td class="p-3 font-gaming text-warning fw-bold">${acc.code}</td>
+                    <td class="p-3 text-white text-truncate" style="max-width: 200px;">${acc.title}</td>
+                    <td class="p-3 text-success fw-bold">${formatCurrency(acc.price)}</td>
+                    <td class="p-3">
+                        <button onclick="toggleAccountSold(${idx})" class="badge border ${acc.sold ? 'bg-danger bg-opacity-25 border-danger text-danger' : 'bg-success bg-opacity-25 border-success text-success'}">
+                            ${acc.sold ? 'Đã Bán' : 'Còn Hàng'}
+                        </button>
+                    </td>
+                    <td class="p-3 text-end">
+                        <button onclick="editAccount(${idx})" class="btn btn-outline-info btn-sm px-2 py-1 me-1"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteAccount(${idx})" class="btn btn-outline-danger btn-sm px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveAccountFromForm() {
+            const code = document.getElementById('inp-code').value.trim();
+            const title = document.getElementById('inp-title').value.trim();
+            const price = Number(document.getElementById('inp-price').value);
+            const oldPrice = Number(document.getElementById('inp-old-price').value) || null;
+            const rank = document.getElementById('inp-rank').value;
+            const heroes = Number(document.getElementById('inp-heroes').value) || 0;
+            const skins = Number(document.getElementById('inp-skins').value) || 0;
+            const info = document.getElementById('inp-info').value.trim() || 'Trắng thông tin';
+            const imagesRaw = document.getElementById('inp-images').value.trim();
+            const desc = document.getElementById('inp-desc').value.trim();
+
+            if (!code || !title || !price) {
+                alert('Vui lòng nhập Mã Acc, Tiêu Đề và Giá Bán!');
+                return;
+            }
+
+            const images = imagesRaw ? imagesRaw.split('\n').map(s => s.trim()).filter(Boolean) : ['https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=900&q=80'];
+            const editIndex = Number(document.getElementById('edit-acc-index').value);
+
+            const accObj = {
+                code, title, price, oldPrice, rank, heroes, skins, info,
+                sold: editIndex >= 0 ? ACCOUNTS_DATA[editIndex].sold : false,
+                images, desc
+            };
+
+            if (editIndex >= 0) {
+                ACCOUNTS_DATA[editIndex] = accObj;
+                showToast('Đã cập nhật tài khoản thành công!');
+            } else {
+                ACCOUNTS_DATA.unshift(accObj);
+                showToast('Đã đăng tài khoản mới lên shop!');
+            }
+
+            resetAccountForm();
+            renderAccounts();
+            renderAdminAccountList();
+        }
+
+        function editAccount(index) {
+            const acc = ACCOUNTS_DATA[index];
+            document.getElementById('edit-acc-index').value = index;
+            document.getElementById('form-acc-heading').textContent = `✏️ Đang Sửa Tài Khoản: ${acc.code}`;
+            document.getElementById('btn-cancel-edit').classList.remove('d-none');
+
+            document.getElementById('inp-code').value = acc.code;
+            document.getElementById('inp-title').value = acc.title;
+            document.getElementById('inp-price').value = acc.price;
+            document.getElementById('inp-old-price').value = acc.oldPrice || '';
+            document.getElementById('inp-rank').value = acc.rank;
+            document.getElementById('inp-heroes').value = acc.heroes;
+            document.getElementById('inp-skins').value = acc.skins;
+            document.getElementById('inp-info').value = acc.info;
+            document.getElementById('inp-images').value = acc.images.join('\n');
+            document.getElementById('inp-desc').value = acc.desc;
+        }
+
+        function resetAccountForm() {
+            document.getElementById('edit-acc-index').value = '-1';
+            document.getElementById('form-acc-heading').textContent = '➕ Đăng Tài Khoản Mới';
+            document.getElementById('btn-cancel-edit').classList.add('d-none');
+
+            document.getElementById('inp-code').value = '';
+            document.getElementById('inp-title').value = '';
+            document.getElementById('inp-price').value = '';
+            document.getElementById('inp-old-price').value = '';
+            document.getElementById('inp-heroes').value = '';
+            document.getElementById('inp-skins').value = '';
+            document.getElementById('inp-info').value = 'Trắng thông tin';
+            document.getElementById('inp-images').value = '';
+            document.getElementById('inp-desc').value = '';
+        }
+
+        function toggleAccountSold(index) {
+            ACCOUNTS_DATA[index].sold = !ACCOUNTS_DATA[index].sold;
+            renderAccounts();
+            renderAdminAccountList();
+            showToast('Đã đổi trạng thái tài khoản!');
+        }
+
+        function deleteAccount(index) {
+            if (confirm(`Bạn có chắc muốn xóa tài khoản ${ACCOUNTS_DATA[index].code} không?`)) {
+                ACCOUNTS_DATA.splice(index, 1);
+                renderAccounts();
+                renderAdminAccountList();
+                showToast('Đã xóa tài khoản!');
+            }
+        }
+
+        function saveShopSettings() {
+            SHOP_CONFIG.shopName = document.getElementById('cfg-shop-name').value.trim() || "SHOP LIÊN QUÂN VIP";
+            SHOP_CONFIG.zaloPhone = document.getElementById('cfg-zalo').value.trim() || "0987654321";
+            SHOP_CONFIG.fbMessenger = document.getElementById('cfg-fb').value.trim() || "https://m.me/";
+            SHOP_CONFIG.adminPass = document.getElementById('cfg-pass').value.trim() || "123456";
+
+            applyShopConfig();
+            showToast('Đã lưu cài đặt shop!');
+        }
+
+        function exportFullHtmlForGithub() {
+            const docClone = document.documentElement.cloneNode(true);
+            
+            const dataScript = docClone.querySelector('#shop-data-script');
+            dataScript.textContent = `
+        let SHOP_CONFIG = ${JSON.stringify(SHOP_CONFIG, null, 12)};
+
+        let ACCOUNTS_DATA = ${JSON.stringify(ACCOUNTS_DATA, null, 12)};
+    `;
+
+            const fullHtml = '<!DOCTYPE html>\n' + docClone.outerHTML;
+            navigator.clipboard.writeText(fullHtml).then(() => {
+                alert('✅ ĐÃ COPY TOÀN BỘ MÃ NGUỒN MỚI!\n\nBây giờ bạn hãy mở file index.html trên GitHub -> Edit -> Dán đè code mới vào -> Commit changes là xong!');
+            });
+        }
+    </script>
+</body>
+</html>
