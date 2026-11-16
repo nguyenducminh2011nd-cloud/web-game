@@ -107,7 +107,7 @@
                 Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger chỉ trong 3 phút.
             </p>
 
-            <div class="row g-2 justify-content-center mx-auto bg-dark border border-secondary p-3 rounded-4 shadow-lg rgb-border" style="max-width: 480px;">
+            <div class="row g-2 justify-content-center mx-auto bg-dark border border-secondary p-3 rounded-4 shadow-lg rgb-border mb-4" style="max-width: 480px;">
                 <div class="col-4 border-end border-secondary">
                     <div id="stat-total" class="font-gaming fs-4 fw-bold text-white">0</div>
                     <div class="small text-light opacity-75">Tổng Số Acc</div>
@@ -121,6 +121,40 @@
                     <div class="small text-light opacity-75">Đã Bán</div>
                 </div>
             </div>
+
+            <!-- ĐIỀU KHOẢN & LƯU Ý CHO NGƯỜI MUA -->
+            <div class="card bg-dark border border-warning border-opacity-50 text-start mx-auto shadow-lg rounded-4 p-4" style="max-width: 900px;">
+                <h5 class="text-warning font-gaming mb-3 fs-6 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> ĐIỀU KHOẢN & LƯU Ý QUAN TRỌNG KHI MUA HÀNG
+                </h5>
+                <div class="row g-3 small text-light opacity-85">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
+                            <strong class="text-warning d-block mb-1">1. Cam kết tài khoản:</strong>
+                            100% tài khoản bán ra đều chuẩn mô tả, trắng thông tin (hoặc liên kết ảo dễ thu hồi). Hỗ trợ đổi mật khẩu và gắn số điện thoại/email chính chủ ngay sau khi nhận tài khoản.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
+                            <strong class="text-warning d-block mb-1">2. Trách nhiệm sau khi mua:</strong>
+                            Sau khi nhận thông tin và đổi mật khẩu thành công, khách hàng vui lòng tự bảo mật tài khoản. Shop không chịu trách nhiệm trong trường hợp khách tự ý cho mượn hoặc lộ thông tin.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
+                            <strong class="text-warning d-block mb-1">3. Quy trình giao dịch:</strong>
+                            Khách hàng bấm "Chi Tiết & Mua" -> Bấm chốt qua Zalo/Messenger để gửi mã acc cho chủ shop. Kiểm tra kỹ tài khoản trước khi xác nhận thanh toán.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
+                            <strong class="text-warning d-block mb-1">4. Chính sách bảo hành:</strong>
+                            Bảo hành tranh chấp trọn đời các tài khoản do shop trực tiếp lên sóng. Mọi thắc mắc hoặc cần hỗ trợ xử lý nhanh, vui lòng nhắn trực tiếp cho Zalo chủ shop.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </header>
 
@@ -418,7 +452,6 @@
 
     <!-- SHOP DATA & LOGIC SCRIPT -->
     <script>
-        // Khởi tạo dữ liệu từ LocalStorage nếu có, nếu chưa có thì dùng mặc định
         let defaultConfig = {
             shopName: "Giabaoreg.com",
             zaloPhone: "0987654321",
