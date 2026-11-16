@@ -264,7 +264,7 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL MODAL (CÀI ĐẶT & QUẢN LÝ ĐẦY ĐỦ) -->
+    <!-- ADMIN PANEL MODAL -->
     <div class="modal fade" id="adminModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content bg-dark border border-warning text-white shadow-lg">
@@ -278,20 +278,18 @@
                     <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 p-4 mb-3 text-warning fs-3 d-inline-block">
                         <i class="fa-solid fa-lock"></i>
                     </div>
-                    <h5 class="text-white">Đăng Nhập Chủ Shop</h5>
-                    <p class="small text-light opacity-75 mb-3">Mật khẩu mặc định: <code class="text-warning fw-bold">123456</code></p>
-                    <input type="password" id="admin-pass-input" onkeydown="if(event.key==='Enter') checkAdminLogin()" placeholder="Nhập mật khẩu..." class="form-control text-center mb-3">
+                    <h5 class="text-white mb-4">Đăng Nhập Chủ Shop</h5>
+                    <input type="password" id="admin-pass-input" onkeydown="if(event.key==='Enter') checkAdminLogin()" placeholder="Nhập mật khẩu..." class="form-control text-center mb-3 py-2">
                     <button onclick="checkAdminLogin()" class="btn btn-gold w-100 py-2">Mở Bảng Điều Khiển</button>
                 </div>
 
                 <!-- Admin Dashboard View -->
                 <div id="admin-dashboard-view" class="d-none modal-body p-4">
-                    <div class="bg-success bg-opacity-15 border border-success border-opacity-50 p-3 rounded-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4">
+                    <div class="bg-success bg-opacity-15 border border-success border-opacity-50 p-3 rounded-3 d-flex align-items-center justify-content-between gap-3 mb-4">
                         <div>
-                            <h6 class="text-success fw-bold mb-1"><i class="fa-brands fa-github me-1"></i> Đồng Bộ & Cập Nhật Lên GitHub</h6>
-                            <p class="small text-light opacity-85 mb-0">Sau khi bạn đổi Cài Đặt hoặc Thêm/Sửa Acc, hãy bấm nút bên cạnh để copy code rồi dán đè vào file `index.html` trên GitHub để lưu vĩnh viễn!</p>
+                            <h6 class="text-success fw-bold mb-1"><i class="fa-solid fa-circle-check me-1"></i> Tự Động Lưu Trữ Thông Minh</h6>
+                            <p class="small text-light opacity-85 mb-0">Mọi thay đổi (Đổi mật khẩu, thêm/sửa acc, đổi tên shop) đã được tự động lưu trực tiếp trên trình duyệt của bạn!</p>
                         </div>
-                        <button onclick="exportFullHtmlForGithub()" class="btn btn-success btn-sm fw-bold text-nowrap py-2 px-3"><i class="fa-solid fa-copy me-1"></i> Copy Code Mới Ngay</button>
                     </div>
 
                     <ul class="nav nav-tabs border-secondary mb-4">
@@ -377,7 +375,7 @@
                         </div>
                     </div>
 
-                    <!-- Settings Tab (Đầy đủ mọi thứ để chỉnh) -->
+                    <!-- Settings Tab -->
                     <div id="admin-tab-settings" class="d-none bg-black border border-secondary p-4 rounded-3">
                         <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-gear me-1"></i> Cài Đặt Thông Tin Chung Cho Shop</h6>
                         <div class="row g-3">
@@ -419,15 +417,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- SHOP DATA & LOGIC SCRIPT -->
-    <script id="shop-data-script">
-        let SHOP_CONFIG = {
+    <script>
+        // Khởi tạo dữ liệu từ LocalStorage nếu có, nếu chưa có thì dùng mặc định
+        let defaultConfig = {
             shopName: "Giabaoreg.com",
             zaloPhone: "0987654321",
             fbMessenger: "https://m.me/",
             adminPass: "123456"
         };
 
-        let ACCOUNTS_DATA = [
+        let defaultAccounts = [
             {
                 code: "#LQ01",
                 title: "Acc Nakroth Thứ Nguyên Vệ Thần + Tulen Chí Tôn Kiếm Tiên",
@@ -460,9 +459,15 @@
                 desc: "• Acc ngon bổ rẻ cho anh em leo rank.\n• Skin nổi bật: Violet Thứ Nguyên Vệ Thần, Florentino Tinh Hệ."
             }
         ];
-    </script>
 
-    <script>
+        let SHOP_CONFIG = JSON.parse(localStorage.getItem('GB_SHOP_CONFIG')) || defaultConfig;
+        let ACCOUNTS_DATA = JSON.parse(localStorage.getItem('GB_ACCOUNTS_DATA')) || defaultAccounts;
+
+        function saveToLocalStorage() {
+            localStorage.setItem('GB_SHOP_CONFIG', JSON.stringify(SHOP_CONFIG));
+            localStorage.setItem('GB_ACCOUNTS_DATA', JSON.stringify(ACCOUNTS_DATA));
+        }
+
         let currentViewingAccount = null;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -666,7 +671,7 @@
                 showAdminDashboard();
                 showToast('Đăng nhập thành công!');
             } else {
-                alert('Sai mật khẩu! Mật khẩu mặc định là 123456');
+                alert('Sai mật khẩu quản trị!');
             }
         }
 
@@ -755,6 +760,7 @@
                 showToast('Đã đăng tài khoản mới lên shop!');
             }
 
+            saveToLocalStorage();
             resetAccountForm();
             renderAccounts();
             renderAdminAccountList();
@@ -796,6 +802,7 @@
 
         function toggleAccountSold(index) {
             ACCOUNTS_DATA[index].sold = !ACCOUNTS_DATA[index].sold;
+            saveToLocalStorage();
             renderAccounts();
             renderAdminAccountList();
             showToast('Đã đổi trạng thái tài khoản!');
@@ -804,6 +811,7 @@
         function deleteAccount(index) {
             if (confirm(`Bạn có chắc muốn xóa tài khoản ${ACCOUNTS_DATA[index].code} không?`)) {
                 ACCOUNTS_DATA.splice(index, 1);
+                saveToLocalStorage();
                 renderAccounts();
                 renderAdminAccountList();
                 showToast('Đã xóa tài khoản!');
@@ -816,24 +824,9 @@
             SHOP_CONFIG.fbMessenger = document.getElementById('cfg-fb').value.trim() || "https://m.me/";
             SHOP_CONFIG.adminPass = document.getElementById('cfg-pass').value.trim() || "123456";
 
+            saveToLocalStorage();
             applyShopConfig();
             showToast('Đã lưu cài đặt shop thành công!');
-        }
-
-        function exportFullHtmlForGithub() {
-            const docClone = document.documentElement.cloneNode(true);
-            
-            const dataScript = docClone.querySelector('#shop-data-script');
-            dataScript.textContent = `
-        let SHOP_CONFIG = ${JSON.stringify(SHOP_CONFIG, null, 12)};
-
-        let ACCOUNTS_DATA = ${JSON.stringify(ACCOUNTS_DATA, null, 12)};
-    `;
-
-            const fullHtml = '<!DOCTYPE html>\n' + docClone.outerHTML;
-            navigator.clipboard.writeText(fullHtml).then(() => {
-                alert('✅ ĐÃ COPY TOÀN BỘ MÃ NGUỒN MỚI!\n\nBây giờ bạn hãy mở file index.html trên GitHub -> Edit -> Dán đè code mới vào -> Commit changes là xong!');
-            });
         }
     </script>
 </body>
