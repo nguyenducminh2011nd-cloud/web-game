@@ -184,10 +184,16 @@
                 <div class="col-sm-6 col-lg-3">
                     <select id="filter-rank" onchange="renderAccounts()" class="form-select">
                         <option value="all">🏆 Tất cả mức Rank</option>
-                        <option value="Cao Thủ">Cao Thủ / Chiến Tướng</option>
-                        <option value="Tinh Anh">Tinh Anh</option>
+                        <option value="Không Rank">Không Rank (Acc Reg)</option>
+                        <option value="Đồng">Đồng</option>
+                        <option value="Bạc">Bạc</option>
+                        <option value="Vàng">Vàng</option>
+                        <option value="Bạch Kim">Bạch Kim</option>
                         <option value="Kim Cương">Kim Cương</option>
-                        <option value="Bạch Kim">Bạch Kim trở xuống</option>
+                        <option value="Tinh Anh">Tinh Anh</option>
+                        <option value="Cao Thủ">Cao Thủ</option>
+                        <option value="Chiến Tướng">Chiến Tướng</option>
+                        <option value="Thách Đấu">Thách Đấu</option>
                     </select>
                 </div>
                 <div class="col-lg-2">
@@ -273,7 +279,7 @@
         <div class="container d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
             <div>
                 <p id="footer-shop-name" class="font-gaming fw-bold text-warning mb-1 fs-5">Giabaoreg.com</p>
-                <p class="small text-light opacity-75 mb-0">Giao dịch trung gian uy tín • Hỗ trợ đổi mật khẩu 24/7.</p>
+                <p class="small text-light opacity-75 mb-0 fw-bold">CSKH • GDTG • HỖ TRỢ 24/7</p>
             </div>
             <div class="d-flex gap-2">
                 <a id="footer-zalo" href="#" target="_blank" class="btn btn-info btn-sm fw-bold"><i class="fa-solid fa-phone me-1"></i> Zalo Chủ Shop</a>
@@ -417,10 +423,16 @@
                                 <div class="col-md-2">
                                     <label class="small text-light opacity-75 mb-1">Rank</label>
                                     <select id="inp-rank" class="form-select form-select-sm">
-                                        <option value="Cao Thủ">Cao Thủ</option>
-                                        <option value="Tinh Anh">Tinh Anh</option>
-                                        <option value="Kim Cương">Kim Cương</option>
+                                        <option value="Không Rank">Không Rank</option>
+                                        <option value="Đồng">Đồng</option>
+                                        <option value="Bạc">Bạc</option>
+                                        <option value="Vàng">Vàng</option>
                                         <option value="Bạch Kim">Bạch Kim</option>
+                                        <option value="Kim Cương">Kim Cương</option>
+                                        <option value="Tinh Anh">Tinh Anh</option>
+                                        <option value="Cao Thủ">Cao Thủ</option>
+                                        <option value="Chiến Tướng">Chiến Tướng</option>
+                                        <option value="Thách Đấu">Thách Đấu</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -622,7 +634,7 @@
                 else if (priceFilter === '300to700') matchPrice = acc.price > 300000 && acc.price <= 700000;
                 else if (priceFilter === 'above700') matchPrice = acc.price > 700000;
 
-                const matchRank = rankFilter === 'all' || acc.rank.toLowerCase().includes(rankFilter.toLowerCase());
+                const matchRank = rankFilter === 'all' || acc.rank.toLowerCase() === rankFilter.toLowerCase();
 
                 let matchStatus = true;
                 if (statusFilter === 'available') matchStatus = !acc.sold;
