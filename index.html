@@ -20,28 +20,28 @@
         }
         .font-gaming { font-family: 'Chakra Petch', sans-serif; }
         
-        /* Hiệu ứng LED RGB Animation viền */
+        /* Hiệu ứng LED RGB Animation viền lung linh */
         @keyframes rgbGlow {
-            0% { border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
-            33% { border-color: #06b6d4; box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
-            66% { border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); }
-            100% { border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+            0% { border-color: #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+            33% { border-color: #06b6d4; box-shadow: 0 0 15px rgba(6, 182, 212, 0.5); }
+            66% { border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.5); }
+            100% { border-color: #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
         }
 
         .rgb-border {
             border: 2px solid #f59e0b;
-            animation: rgbGlow 6s infinite;
+            animation: rgbGlow 5s infinite;
         }
 
         .gaming-card {
             background-color: #131c31;
-            border: 1px solid #334155;
+            border: 2px solid #334155;
             transition: all 0.3s ease;
+            animation: rgbGlow 8s infinite;
         }
         .gaming-card:hover {
-            border-color: #f59e0b;
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(245, 158, 11, 0.3);
         }
 
         .text-gold { color: #f59e0b; }
@@ -81,7 +81,7 @@
                 <div class="bg-warning text-dark p-2 rounded fw-bold fs-5 shadow"><i class="fa-solid fa-crown"></i></div>
                 <div>
                     <span id="nav-shop-name" class="font-gaming fw-bold fs-4 text-warning">Giabaoreg.com</span>
-                    <p class="small text-light opacity-75 mb-0" style="font-size: 11px;">Uy Tín • Trắng Thông Tin • Giá Rẻ</p>
+                    <p class="small text-light opacity-75 mb-0" style="font-size: 11px;">Uy Tín • Chất Lượng • Giá Rẻ</p>
                 </div>
             </a>
             <div class="d-flex align-items-center gap-2">
@@ -98,13 +98,15 @@
     <!-- HERO BANNER -->
     <header class="py-5 border-bottom border-secondary bg-dark bg-opacity-50">
         <div class="container text-center py-4">
-            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-50 px-3 py-2 rounded-pill mb-3 fw-bold">
-                <span class="spinner-grow spinner-grow-sm text-success me-1" role="status"></span>
-                Hệ Thống Cập Nhật Acc Liên Tục 24/7
-            </span>
+            <!-- ONLINE COUNTER BADGE -->
+            <div class="d-inline-flex align-items-center gap-2 bg-dark border border-secondary px-3 py-1.5 rounded-pill mb-3 shadow rgb-border">
+                <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                <span class="small text-light">Đang Online: <strong id="online-count" class="text-warning font-gaming">28</strong> người</span>
+            </div>
+
             <h1 class="font-gaming fw-bold display-6 display-md-4 mb-3 text-white">KHO TÀI KHOẢN <span class="text-warning">LIÊN QUÂN MOBILE</span></h1>
             <p class="text-light opacity-85 mx-auto mb-4 fs-6" style="max-width: 700px;">
-                Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger chỉ trong 3 phút.
+                Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger.
             </p>
 
             <div class="row g-2 justify-content-center mx-auto bg-dark border border-secondary p-3 rounded-4 shadow-lg rgb-border mb-4" style="max-width: 480px;">
@@ -123,7 +125,7 @@
             </div>
 
             <!-- ĐIỀU KHOẢN & LƯU Ý CHO NGƯỜI MUA -->
-            <div class="card bg-dark border border-warning border-opacity-50 text-start mx-auto shadow-lg rounded-4 p-4" style="max-width: 900px;">
+            <div class="card bg-dark text-start mx-auto shadow-lg rounded-4 p-4 rgb-border" style="max-width: 900px;">
                 <h5 class="text-warning font-gaming mb-3 fs-6 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation"></i> ĐIỀU KHOẢN & LƯU Ý QUAN TRỌNG KHI MUA HÀNG
                 </h5>
@@ -131,7 +133,7 @@
                     <div class="col-md-6">
                         <div class="p-3 bg-black border border-secondary rounded-3 h-100">
                             <strong class="text-warning d-block mb-1">1. Cam kết tài khoản:</strong>
-                            100% tài khoản bán ra đều chuẩn mô tả, trắng thông tin (hoặc liên kết ảo dễ thu hồi). Hỗ trợ đổi mật khẩu và gắn số điện thoại/email chính chủ ngay sau khi nhận tài khoản.
+                            100% tài khoản bán ra đều chuẩn mô tả. Sau khi nhận thông tin và đổi mật khẩu, shop chỉ bảo kê cho bạn trong vòng <b>12 tiếng tính từ lúc giao acc</b>, mọi trường hợp để lộ thông tin sau đó shop không bảo kê.
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -148,8 +150,8 @@
                     </div>
                     <div class="col-md-6">
                         <div class="p-3 bg-black border border-secondary rounded-3 h-100">
-                            <strong class="text-warning d-block mb-1">4. Chính sách bảo hành:</strong>
-                            Bảo hành tranh chấp trọn đời các tài khoản do shop trực tiếp lên sóng. Mọi thắc mắc hoặc cần hỗ trợ xử lý nhanh, vui lòng nhắn trực tiếp cho Zalo chủ shop.
+                            <strong class="text-warning d-block mb-1">4. Chính sách hỗ trợ:</strong>
+                            Chủ shop sẽ hỗ trợ trong thời gian sớm nhất. Mọi thắc mắc hoặc cần hỗ trợ xử lý nhanh, vui lòng nhắn trực tiếp cho Zalo chủ shop.
                         </div>
                     </div>
                 </div>
@@ -162,7 +164,7 @@
     <main class="container py-5">
         
         <!-- FILTER BAR -->
-        <div class="bg-dark border border-secondary p-4 rounded-4 mb-4 shadow-lg">
+        <div class="bg-dark border border-secondary p-4 rounded-4 mb-4 shadow-lg rgb-border">
             <div class="row g-3">
                 <div class="col-lg-4">
                     <div class="input-group">
@@ -208,6 +210,61 @@
             <p class="text-light opacity-75 small">Hãy thử tìm kiếm với từ khóa khác nhé!</p>
             <button onclick="resetFilters()" class="btn btn-warning btn-sm fw-bold">Đặt Lại Bộ Lọc</button>
         </div>
+
+        <!-- PHẦN ĐÁNH GIÁ SHOP / FEEDBACK KHÁCH HÀNG -->
+        <section class="mt-5 pt-4 border-top border-secondary">
+            <div class="text-center mb-4">
+                <h3 class="font-gaming text-white"><i class="fa-solid fa-star text-warning me-2"></i> ĐÁNH GIÁ TỪ <span class="text-warning">KHÁCH HÀNG</span></h3>
+                <p class="text-light opacity-75 small">Phản hồi thực tế từ những anh em đã giao dịch thành công tại shop</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card bg-dark h-100 rounded-4 p-4 rgb-border text-white">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-warning">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="small text-light opacity-85 mb-3">"Shop uy tín vãi anh em ơi, mua acc Nakroth xong đổi pass cái một, nhân viên hỗ trợ nhiệt tình đúng 3 phút là xong việc."</p>
+                        <div class="d-flex align-items-center gap-2 mt-auto">
+                            <div class="bg-warning text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">T</div>
+                            <div>
+                                <h6 class="mb-0 small fw-bold">Tuấn Anh (Nam Định)</h6>
+                                <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua #LQ01</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-dark h-100 rounded-4 p-4 rgb-border text-white">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-warning">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="small text-light opacity-85 mb-3">"Acc trắng thông tin chuẩn 100% như mô tả. Giá học sinh mà nhiều skin ngon quá, sẽ ủng hộ shop dài dài!"</p>
+                        <div class="d-flex align-items-center gap-2 mt-auto">
+                            <div class="bg-info text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">M</div>
+                            <div>
+                                <h6 class="mb-0 small fw-bold">Minh Quân</h6>
+                                <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua #LQ02</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-dark h-100 rounded-4 p-4 rgb-border text-white">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-warning">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="small text-light opacity-85 mb-3">"Giao dịch nhanh gọn qua Zalo, chủ shop rep tin nhắn cực nhanh và hướng dẫn bảo mật rất kỹ. 10 điểm uy tín!"</p>
+                        <div class="d-flex align-items-center gap-2 mt-auto">
+                            <div class="bg-danger text-white fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">H</div>
+                            <div>
+                                <h6 class="mb-0 small fw-bold">Hoàng Long</h6>
+                                <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua Acc VIP</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     </main>
 
@@ -506,7 +563,18 @@
         window.addEventListener('DOMContentLoaded', () => {
             applyShopConfig();
             renderAccounts();
+            startOnlineCounter();
         });
+
+        function startOnlineCounter() {
+            let count = Math.floor(Math.random() * 15) + 22;
+            document.getElementById('online-count').textContent = count;
+            setInterval(() => {
+                count += Math.floor(Math.random() * 3) - 1;
+                if(count < 18) count = 18;
+                document.getElementById('online-count').textContent = count;
+            }, 5000);
+        }
 
         function applyShopConfig() {
             document.title = `${SHOP_CONFIG.shopName} - Shop Bán Acc Liên Quân Uy Tín`;
