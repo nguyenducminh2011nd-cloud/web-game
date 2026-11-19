@@ -1,11 +1,11 @@
 // ==========================================
 // 1. CẤU HÌNH DATABASE CHUNG (SUPABASE)
-// Điền SUPABASE_URL và SUPABASE_ANON_KEY để đồng bộ mọi thiết bị
-// Nếu để trống, web tạm dùng LocalStorage trên máy hiện tại
+// Điền SUPABASE_URL và SUPABASE_ANON_KEY để đồng bộ mọi máy & mọi link
 // ==========================================
 const SUPABASE_URL = ""; // VD: "https://xxxx.supabase.co"
 const SUPABASE_ANON_KEY = ""; // VD: "eyJhbGciOi..."
 const SUPABASE_TABLE = "accounts";
+const SUPABASE_CONFIG_TABLE = "shop_config";
 
 const DEFAULT_CONFIG = {
     shopName: "Giabaoreg.com",
@@ -35,6 +35,45 @@ async function sbRequest(path, method = "GET", body = null) {
     });
     if (!res.ok) throw new Error(`Supabase error ${res.status}`);
     return method === "DELETE" ? null : res.json();
+}
+
+async function loadConfigFromCloud() {
+    applyShopConfig();
+    if (!hasSupabase()) return;
+    try {
+        const rows = await sbRequest(`${SUPABASE_CONFIG_TABLE}?select=*&id=eq.1`);
+        if (rows && rows[0]) {
+            shopConfig = {
+                shopName: rows[0].shop_name || DEFAULT_CONFIG.shopName,
+                zalo: rows[0].zalo || DEFAULT_CONFIG.zalo,
+                fb: rows[0].fb || DEFAULT_CONFIG.fb,
+                adminPass: rows[0].admin_pass || DEFAULT_CONFIG.adminPass
+            };
+            localStorage.setItem("giabaoreg_config", JSON.stringify(shopConfig));
+            applyShopConfig();
+        }
+    } catch (err) {
+        console.warn("Chưa dùng bảng shop_config hoặc dùng local:", err);
+    }
+}
+
+async function syncConfigToCloud() {
+    localStorage.setItem("giabaoreg_config", JSON.stringify(shopConfig));
+    if (!hasSupabase()) return;
+    try {
+        const payload = {
+            id: 1,
+            shop_name: shopConfig.shopName,
+            zalo: shopConfig.zalo,
+            fb: shopConfig.fb,
+            admin_pass: shopConfig.adminPass
+        };
+        await sbRequest(`${SUPABASE_CONFIG_TABLE}?id=eq.1`, "PATCH", payload).catch(async () => {
+            await sbRequest(`${SUPABASE_CONFIG_TABLE}`, "POST", payload);
+        });
+    } catch (err) {
+        console.warn("Không đồng bộ được cấu hình lên Supabase:", err);
+    }
 }
 
 async function loadAccountsFromCloud() {
@@ -108,10 +147,12 @@ function applyShopConfig() {
     document.title = `${shopConfig.shopName} - Giao Dịch Tự Động 24/7`;
     document.getElementById("nav-shop-name").textContent = shopConfig.shopName;
     document.getElementById("footer-shop-name").textContent = shopConfig.shopName;
-    const zaloUrl = /^\d+$/.test(shopConfig.zalo.trim()) ? `https://zalo.me/${shopConfig.zalo.trim()}` : shopConfig.zalo;
+    const zaloUrl = /^\d+$/.test((shopConfig.zalo || "").trim())
+        ? `https://zalo.me/${shopConfig.zalo.trim()}`
+        : (shopConfig.zalo || "https://zalo.me/");
     document.getElementById("nav-zalo-btn").href = zaloUrl;
     document.getElementById("footer-zalo").href = zaloUrl;
-    document.getElementById("footer-fb").href = shopConfig.fb;
+    document.getElementById("footer-fb").href = shopConfig.fb || "https://m.me/";
 }
 
 function updateStats() {
@@ -162,7 +203,9 @@ function renderAccounts() {
 
     filtered.forEach(acc => {
         const realIndex = accounts.indexOf(acc);
-        const firstImg = (acc.images && acc.images[0]) ? acc.images[0] : "https://placehold.co/600x340/131c31/f59e0b?text=Lien+Quan+Mobile";
+        const firstImg = (acc.images && acc.images[0])
+            ? acc.images[0]
+            : "https://placehold.co/600x340/131c31/f59e0b?text=Lien+Quan+Mobile";
         const col = document.createElement("div");
         col.className = "col-sm-6 col-lg-4";
         col.innerHTML = `
@@ -174,7 +217,7 @@ function renderAccounts() {
                 </div>
                 <div class="card-body d-flex flex-column p-3">
                     <h6 class="fw-bold text-white mb-2 text-truncate">${acc.title}</h6>
-                    <div class="d-flex flex-wrap gap-2 small text-light opacity-75 mb-3">
+                    <div class="d-flex flex-wrap gap-2 small text-white mb-3">
                         <span><i class="fa-solid fa-trophy text-warning"></i> ${acc.rank}</span>
                         <span>•</span>
                         <span>${acc.heroes} Tướng</span>
@@ -184,7 +227,7 @@ function renderAccounts() {
                     <div class="mt-auto d-flex align-items-center justify-content-between pt-2 border-top border-secondary">
                         <div>
                             <div class="font-gaming fw-bold text-warning fs-5">${formatMoney(acc.price)}</div>
-                            ${acc.oldPrice ? `<small class="text-light opacity-50 text-decoration-line-through">${formatMoney(acc.oldPrice)}</small>` : ""}
+                            ${acc.oldPrice ? `<small class="text-white text-decoration-line-through">${formatMoney(acc.oldPrice)}</small>` : ""}
                         </div>
                         <button onclick="openDetailModal(${realIndex})" class="btn btn-gold btn-sm px-3">Chi Tiết & Mua</button>
                     </div>
@@ -225,7 +268,7 @@ function openDetailModal(index) {
     gallery.innerHTML = "";
     const imgs = (acc.images && acc.images.length) ? acc.images : [];
     if (imgs.length === 0) {
-        gallery.innerHTML = `<p class="small text-light opacity-75">Chưa có ảnh chụp kho đồ.</p>`;
+        gallery.innerHTML = `<p class="small text-white">Chưa có ảnh chụp kho đồ.</p>`;
     } else {
         imgs.forEach(url => {
             const div = document.createElement("div");
@@ -390,12 +433,12 @@ function renderAdminTable() {
     });
 }
 
-function saveShopSettings() {
+async function saveShopSettings() {
     shopConfig.shopName = document.getElementById("cfg-shop-name").value.trim() || DEFAULT_CONFIG.shopName;
     shopConfig.zalo = document.getElementById("cfg-zalo").value.trim() || DEFAULT_CONFIG.zalo;
     shopConfig.fb = document.getElementById("cfg-fb").value.trim() || DEFAULT_CONFIG.fb;
     shopConfig.adminPass = document.getElementById("cfg-pass").value.trim() || DEFAULT_CONFIG.adminPass;
-    localStorage.setItem("giabaoreg_config", JSON.stringify(shopConfig));
+    await syncConfigToCloud();
     applyShopConfig();
     alert("Đã lưu cài đặt shop!");
 }
@@ -411,5 +454,5 @@ setInterval(() => {
     el.textContent = next;
 }, 5000);
 
-applyShopConfig();
+loadConfigFromCloud();
 loadAccountsFromCloud();
