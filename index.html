@@ -37,7 +37,6 @@
       100% { background-position: 0% 50%; }
     }
 
-    /* Viền LED RGB chuẩn cho mọi khung */
     .rgb-frame {
       position: relative;
       border-radius: 16px;
@@ -77,7 +76,6 @@
       padding: 0 16px;
     }
 
-    /* Header hiện đại */
     .site-header {
       position: sticky;
       top: 0;
@@ -120,7 +118,6 @@
       flex-wrap: wrap;
     }
 
-    /* Nút bấm hiện đại */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -233,20 +230,32 @@
     }
 
     .hero p {
-      margin: 0 auto 16px;
+      margin: 0 auto 14px;
       max-width: 720px;
       color: var(--text-muted);
       font-size: 0.96rem;
     }
 
-    /* Thanh nút hỗ trợ Zalo & Messenger nổi bật ngay trên màn hình chính */
     .quick-support-bar {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       flex-wrap: wrap;
-      margin: 0 auto 22px;
+      margin: 0 auto 10px;
+    }
+
+    .zalo-phone-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.86rem;
+      color: #7dd3fc;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 18px;
     }
 
     .stats-bar {
@@ -308,7 +317,7 @@
       padding: 14px;
     }
 
-    .toolbar-top {
+    .toolbar-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -316,19 +325,27 @@
       flex-wrap: wrap;
     }
 
+    .filter-label {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
     .filter-group {
       display: flex;
-      gap: 8px;
+      align-items: center;
+      gap: 7px;
       flex-wrap: wrap;
     }
 
     .filter-btn {
-      padding: 7px 12px;
+      padding: 6px 12px;
       border-radius: 10px;
       border: 1px solid rgba(148, 163, 184, 0.22);
       background: rgba(15, 23, 42, 0.85);
       color: #cbd5e1;
-      font-size: 0.83rem;
+      font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.18s ease;
@@ -421,18 +438,6 @@
       border-radius: 7px;
     }
 
-    .acc-sale {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: linear-gradient(135deg, #ef4444, #f97316);
-      color: #fff;
-      font-size: 0.76rem;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 7px;
-    }
-
     .acc-sold-badge {
       position: absolute;
       inset: 0;
@@ -496,13 +501,7 @@
     .acc-price {
       font-weight: 800;
       color: #4ade80;
-      font-size: 1.02rem;
-      display: block;
-    }
-
-    .acc-old-price {
-      color: #64748b;
-      font-size: 0.78rem;
+      font-size: 1.04rem;
     }
 
     .btn-detail {
@@ -648,7 +647,6 @@
         Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger.
       </p>
 
-      <!-- Nút hỗ trợ Zalo & Messenger nổi bật ngay trên màn hình chính -->
       <div class="quick-support-bar">
         <a id="mainZaloBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn btn-zalo">
           💬 Hỗ Trợ Qua Zalo
@@ -656,6 +654,10 @@
         <a id="mainMessBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
           ⚡ Hỗ Trợ Qua Messenger
         </a>
+      </div>
+
+      <div id="zaloPhoneDisplay" class="zalo-phone-badge" style="display:none;">
+        📞 Zalo hỗ trợ: <strong id="zaloPhoneText"></strong>
       </div>
 
       <div class="stats-bar">
@@ -674,7 +676,6 @@
       </div>
     </section>
 
-    <!-- Điều khoản & lưu ý đưa lên trên cùng -->
     <section class="terms-box rgb-frame">
       <h2>⚠️ ĐIỀU KHOẢN &amp; LƯU Ý QUAN TRỌNG KHI MUA HÀNG</h2>
       <div class="terms-grid">
@@ -689,18 +690,36 @@
       </div>
     </section>
 
-    <!-- Bộ lọc mức giá & mức acc -->
-    <section class="toolbar rgb-frame" aria-label="Bộ lọc mức giá, mức acc và tìm kiếm">
-      <div class="toolbar-top">
+    <section class="toolbar rgb-frame" aria-label="Bộ lọc giá bán, bậc rank và tìm kiếm">
+      <div class="toolbar-row">
         <div class="filter-group">
+          <span class="filter-label">Giá &amp; Trạng thái:</span>
           <button type="button" class="filter-btn active" data-filter="all">Tất cả</button>
           <button type="button" class="filter-btn" data-filter="available">Còn hàng</button>
-          <button type="button" class="filter-btn" data-filter="under100">Dưới 100k</button>
-          <button type="button" class="filter-btn" data-filter="100to300">100k – 300k</button>
-          <button type="button" class="filter-btn" data-filter="over300">Trên 300k</button>
-          <button type="button" class="filter-btn" data-filter="manySkins">Acc nhiều skin (100+)</button>
-          <button type="button" class="filter-btn" data-filter="highrank">Rank cao</button>
+          <button type="button" class="filter-btn" data-filter="under50">Dưới 50k</button>
+          <button type="button" class="filter-btn" data-filter="50to150">50k – 150k</button>
+          <button type="button" class="filter-btn" data-filter="150to300">150k – 300k</button>
+          <button type="button" class="filter-btn" data-filter="300to500">300k – 500k</button>
+          <button type="button" class="filter-btn" data-filter="over500">Trên 500k</button>
+          <button type="button" class="filter-btn" data-filter="manySkins">Nhiều skin (100+)</button>
           <button type="button" class="filter-btn" data-filter="sold">Đã bán</button>
+        </div>
+      </div>
+
+      <div class="toolbar-row">
+        <div class="filter-group">
+          <span class="filter-label">Bậc Rank:</span>
+          <button type="button" class="filter-btn active" data-rank-filter="all">Mọi Rank</button>
+          <button type="button" class="filter-btn" data-rank-filter="Acc reg">Acc reg</button>
+          <button type="button" class="filter-btn" data-rank-filter="Đồng">Đồng</button>
+          <button type="button" class="filter-btn" data-rank-filter="Bạc">Bạc</button>
+          <button type="button" class="filter-btn" data-rank-filter="Vàng">Vàng</button>
+          <button type="button" class="filter-btn" data-rank-filter="Bạch Kim">Bạch Kim</button>
+          <button type="button" class="filter-btn" data-rank-filter="Kim Cương">Kim Cương</button>
+          <button type="button" class="filter-btn" data-rank-filter="Tinh Anh">Tinh Anh</button>
+          <button type="button" class="filter-btn" data-rank-filter="Cao Thủ">Cao Thủ</button>
+          <button type="button" class="filter-btn" data-rank-filter="Chiến Tướng">Chiến Tướng</button>
+          <button type="button" class="filter-btn" data-rank-filter="Thách Đấu">Thách Đấu</button>
         </div>
 
         <div class="search-sort">
@@ -724,7 +743,6 @@
     </div>
   </footer>
 
-  <!-- Modal Chi Tiết Tài Khoản -->
   <div id="detailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <div class="modal-card rgb-frame">
       <div class="modal-header">
@@ -755,14 +773,12 @@
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div>
           <span id="detailPrice" style="font-size:1.3rem;font-weight:800;color:#4ade80;"></span>
-          <del id="detailOldPrice" style="margin-left:8px;color:#64748b;font-size:0.9rem;"></del>
         </div>
         <button id="detailBuyBtn" type="button" class="btn btn-primary">Mua ngay</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Quản Lý Shop (Admin) -->
   <div id="adminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
     <div class="modal-card rgb-frame">
       <div class="modal-header">
@@ -773,7 +789,6 @@
         <button id="closeAdminBtn" type="button" class="btn btn-sm">✕ Đóng</button>
       </div>
 
-      <!-- Khung đăng nhập Admin -->
       <div id="adminLoginBox">
         <p style="color:#94a3b8;font-size:0.9rem;margin-top:0;">
           Đăng nhập bằng tài khoản quản trị Email &amp; Mật khẩu đã tạo trên Supabase.
@@ -791,7 +806,6 @@
         </form>
       </div>
 
-      <!-- Khung quản trị sau khi đăng nhập -->
       <div id="adminPanelBox" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
           <button id="syncNowBtn" type="button" class="btn btn-sm">🔄 Đồng bộ dữ liệu</button>
@@ -814,12 +828,20 @@
               <input id="accPrice" type="number" class="input" min="0" step="1000" value="0" />
             </div>
             <div class="form-field">
-              <label for="accOldPrice">Giá gốc (VNĐ)</label>
-              <input id="accOldPrice" type="number" class="input" min="0" step="1000" value="0" />
-            </div>
-            <div class="form-field">
-              <label for="accRank">Rank</label>
-              <input id="accRank" type="text" class="input" placeholder="VD: Cao Thủ / Tinh Anh" />
+              <label for="accRank">Bậc Rank</label>
+              <select id="accRank" class="select">
+                <option value="Acc reg">Acc reg</option>
+                <option value="Không Rank">Không Rank</option>
+                <option value="Đồng">Đồng</option>
+                <option value="Bạc">Bạc</option>
+                <option value="Vàng">Vàng</option>
+                <option value="Bạch Kim">Bạch Kim</option>
+                <option value="Kim Cương">Kim Cương</option>
+                <option value="Tinh Anh">Tinh Anh</option>
+                <option value="Cao Thủ">Cao Thủ</option>
+                <option value="Chiến Tướng">Chiến Tướng</option>
+                <option value="Thách Đấu">Thách Đấu</option>
+              </select>
             </div>
             <div class="form-field">
               <label for="accHeroes">Số tướng</label>
@@ -864,12 +886,16 @@
               <input id="cfgShopName" type="text" class="input" />
             </div>
             <div class="form-field">
+              <label for="cfgZaloPhone">Số Zalo hỗ trợ</label>
+              <input id="cfgZaloPhone" type="text" class="input" placeholder="VD: 0912345678" />
+            </div>
+            <div class="form-field">
               <label for="cfgZalo">Link Zalo hỗ trợ</label>
-              <input id="cfgZalo" type="url" class="input" />
+              <input id="cfgZalo" type="url" class="input" placeholder="https://zalo.me/..." />
             </div>
             <div class="form-field">
               <label for="cfgFb">Link Facebook / Messenger</label>
-              <input id="cfgFb" type="url" class="input" />
+              <input id="cfgFb" type="url" class="input" placeholder="https://m.me/..." />
             </div>
           </div>
           <button type="submit" class="btn btn-primary">Lưu cấu hình shop</button>
