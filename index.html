@@ -182,7 +182,7 @@
     }
 
     .hero {
-      padding: 34px 0 18px;
+      padding: 30px 0 14px;
       text-align: center;
     }
 
@@ -219,7 +219,7 @@
     }
 
     .hero p {
-      margin: 0 auto 22px;
+      margin: 0 auto 20px;
       max-width: 720px;
       color: var(--text-muted);
       font-size: 0.96rem;
@@ -230,7 +230,7 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
       max-width: 720px;
-      margin: 0 auto 24px;
+      margin: 0 auto 22px;
     }
 
     .stat-card {
@@ -250,14 +250,47 @@
       color: var(--text-muted);
     }
 
+    /* Đưa mục điều khoản lên phía trên */
+    .terms-box {
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+
+    .terms-box h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      color: #fde047;
+    }
+
+    .terms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+    }
+
+    .terms-item {
+      background: rgba(7, 11, 20, 0.72);
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
     .toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 14px;
+    }
+
+    .toolbar-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
-      padding: 13px;
     }
 
     .filter-group {
@@ -267,12 +300,12 @@
     }
 
     .filter-btn {
-      padding: 7px 13px;
+      padding: 7px 12px;
       border-radius: 10px;
       border: 1px solid rgba(148, 163, 184, 0.22);
       background: rgba(15, 23, 42, 0.85);
       color: #cbd5e1;
-      font-size: 0.84rem;
+      font-size: 0.83rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.18s ease;
@@ -294,8 +327,7 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      flex: 1;
-      justify-content: flex-end;
+      align-items: center;
     }
 
     .input, .select, .textarea {
@@ -318,7 +350,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
       gap: 18px;
-      margin-bottom: 34px;
+      margin-bottom: 36px;
     }
 
     .acc-card {
@@ -468,32 +500,6 @@
       filter: brightness(1.08);
     }
 
-    .terms-box {
-      padding: 20px;
-      margin-bottom: 36px;
-    }
-
-    .terms-box h2 {
-      margin: 0 0 12px;
-      font-size: 1.1rem;
-      color: #fde047;
-    }
-
-    .terms-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 14px;
-      font-size: 0.9rem;
-      color: #cbd5e1;
-    }
-
-    .terms-item {
-      background: rgba(7, 11, 20, 0.72);
-      padding: 13px 15px;
-      border-radius: 12px;
-      border: 1px solid rgba(148, 163, 184, 0.16);
-    }
-
     .modal-backdrop {
       display: none;
       position: fixed;
@@ -611,7 +617,7 @@
     <section class="hero">
       <div class="online-pill">
         <span class="online-dot"></span>
-        <span>Đang Online: <strong id="onlineCount">42</strong> người</span>
+        <span>Đang Online: <strong id="onlineCount">7</strong> người</span>
       </div>
 
       <h1>KHO TÀI KHOẢN LIÊN QUÂN MOBILE</h1>
@@ -635,28 +641,7 @@
       </div>
     </section>
 
-    <section class="toolbar rgb-frame" aria-label="Bộ lọc và tìm kiếm tài khoản">
-      <div class="filter-group">
-        <button type="button" class="filter-btn active" data-filter="all">Tất cả</button>
-        <button type="button" class="filter-btn" data-filter="available">Còn hàng</button>
-        <button type="button" class="filter-btn" data-filter="under200">Dưới 200k</button>
-        <button type="button" class="filter-btn" data-filter="highrank">Rank cao</button>
-        <button type="button" class="filter-btn" data-filter="sold">Đã bán</button>
-      </div>
-
-      <div class="search-sort">
-        <input id="searchInput" type="search" class="input" placeholder="Tìm mã acc, rank, thông tin..." />
-        <select id="sortSelect" class="select" aria-label="Sắp xếp tài khoản">
-          <option value="default">Mới nhất</option>
-          <option value="price-asc">Giá: Thấp đến cao</option>
-          <option value="price-desc">Giá: Cao đến thấp</option>
-          <option value="skins-desc">Nhiều trang phục nhất</option>
-        </select>
-      </div>
-    </section>
-
-    <section id="accountsGrid" class="accounts-grid" aria-live="polite"></section>
-
+    <!-- Điều khoản & lưu ý đưa lên trên cùng -->
     <section class="terms-box rgb-frame">
       <h2>⚠️ ĐIỀU KHOẢN &amp; LƯU Ý QUAN TRỌNG KHI MUA HÀNG</h2>
       <div class="terms-grid">
@@ -666,10 +651,38 @@
         </div>
         <div class="terms-item">
           <strong>2. Trách nhiệm sau khi mua:</strong><br />
-          Sau khi nhận thông tin và đổi mật khẩu thành công, khách hàng vui lòng tự bảo mật tài khoản, chịu trách nhiệm trong trường hợp khách hoặc lộ thông tin.
+          Sau khi nhận thông tin và đổi mật khẩu thành công, khách hàng vui lòng tự bảo mật tài khoản, chịu trách nhiệm trong trường hợp khách tự làm lộ thông tin.
         </div>
       </div>
     </section>
+
+    <!-- Bộ lọc mức giá & mức acc -->
+    <section class="toolbar rgb-frame" aria-label="Bộ lọc mức giá, mức acc và tìm kiếm">
+      <div class="toolbar-top">
+        <div class="filter-group">
+          <button type="button" class="filter-btn active" data-filter="all">Tất cả</button>
+          <button type="button" class="filter-btn" data-filter="available">Còn hàng</button>
+          <button type="button" class="filter-btn" data-filter="under100">Dưới 100k</button>
+          <button type="button" class="filter-btn" data-filter="100to300">100k – 300k</button>
+          <button type="button" class="filter-btn" data-filter="over300">Trên 300k</button>
+          <button type="button" class="filter-btn" data-filter="manySkins">Acc nhiều skin (100+)</button>
+          <button type="button" class="filter-btn" data-filter="highrank">Rank cao</button>
+          <button type="button" class="filter-btn" data-filter="sold">Đã bán</button>
+        </div>
+
+        <div class="search-sort">
+          <input id="searchInput" type="search" class="input" placeholder="Tìm mã acc, rank, thông tin..." />
+          <select id="sortSelect" class="select" aria-label="Sắp xếp tài khoản">
+            <option value="default">Mới nhất</option>
+            <option value="price-asc">Giá: Thấp đến cao</option>
+            <option value="price-desc">Giá: Cao đến thấp</option>
+            <option value="skins-desc">Nhiều trang phục nhất</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section id="accountsGrid" class="accounts-grid" aria-live="polite"></section>
   </main>
 
   <footer class="site-footer">
