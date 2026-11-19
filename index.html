@@ -858,8 +858,14 @@
           </div>
 
           <div class="form-field">
-            <label for="accImages">Link ảnh (mỗi dòng 1 link hoặc cách nhau bởi dấu phẩy)</label>
-            <textarea id="accImages" rows="3" class="textarea" placeholder="https://..."></textarea>
+            <label for="accFiles">Chọn ảnh từ thư viện điện thoại / máy tính (chọn được nhiều ảnh)</label>
+            <input id="accFiles" type="file" class="input" accept="image/*" multiple />
+            <div id="uploadPreviewList" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+          </div>
+
+          <div class="form-field">
+            <label for="accImages">Hoặc dán link ảnh (mỗi dòng 1 link hoặc cách nhau bởi dấu phẩy)</label>
+            <textarea id="accImages" rows="2" class="textarea" placeholder="https://..."></textarea>
           </div>
 
           <div class="form-field">
