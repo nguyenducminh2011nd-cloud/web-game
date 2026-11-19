@@ -1,454 +1,689 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giabaoreg.com - Giao Dịch Tự Động 24/7</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giabaoreg.com - Kho Tài Khoản Liên Quân Mobile</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Fallback layout & modal styling để đảm bảo hoạt động mượt ngay cả khi chưa kịp chỉnh CSS */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b0f19;
+      color: #f1f5f9;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(11, 15, 25, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 64px;
+      flex-wrap: wrap;
+    }
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .brand-sub {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    .btn:hover { background: #334155; }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      border-color: transparent;
+      color: #fff;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-danger {
+      background: #991b1b;
+      border-color: rgba(248, 113, 113, 0.35);
+      color: #fff;
+    }
+    .hero {
+      padding: 36px 0 20px;
+      text-align: center;
+    }
+    .online-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #86efac;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.5rem, 3.5vw, 2.3rem);
+      font-weight: 900;
+      letter-spacing: 0.3px;
+    }
+    .hero p {
+      margin: 0 auto 22px;
+      max-width: 720px;
+      color: #94a3b8;
+      font-size: 0.96rem;
+    }
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 680px;
+      margin: 0 auto 24px;
+    }
+    .stat-card {
+      background: #111827;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 14px;
+      padding: 14px 12px;
+    }
+    .stat-num {
+      display: block;
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .stat-label {
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding: 12px;
+      background: #111827;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 14px;
+    }
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 7px 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: #1e293b;
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filter-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .search-sort {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    .input, .select, .textarea {
+      padding: 8px 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: #0b1220;
+      color: #f8fafc;
+      font-size: 0.9rem;
+    }
+    .input:focus, .select:focus, .textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .acc-card {
+      background: #111827;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .acc-card.is-sold { opacity: 0.78; }
+    .acc-thumb-wrap {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      background: #090d16;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .acc-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .acc-code {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #e2e8f0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .acc-sale {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 0.76rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .acc-sold-badge {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.68);
+      color: #fca5a5;
+      font-weight: 900;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 1px;
+    }
+    .acc-body {
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+    .acc-title {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .acc-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      flex-wrap: wrap;
+    }
+    .acc-info-tag {
+      font-size: 0.8rem;
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .acc-footer {
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148, 163, 184, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .acc-price {
+      font-weight: 800;
+      color: #4ade80;
+      font-size: 1rem;
+      display: block;
+    }
+    .acc-old-price {
+      color: #64748b;
+      font-size: 0.78rem;
+    }
+    .btn-detail {
+      padding: 7px 11px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .terms-box {
+      background: #111827;
+      border: 1px solid rgba(250, 204, 21, 0.25);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 36px;
+    }
+    .terms-box h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+      color: #fde047;
+    }
+    .terms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+    .terms-item {
+      background: rgba(15, 23, 42, 0.65);
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(2, 6, 23, 0.78);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 780px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #111827;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    .modal-header h2, .modal-header h3 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .form-field label {
+      font-size: 0.84rem;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      text-align: left;
+    }
+    th { color: #94a3b8; font-weight: 700; }
+    .site-footer {
+      border-top: 1px solid rgba(148, 163, 184, 0.14);
+      padding: 20px 0 32px;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+  </style>
 </head>
-<body class="text-light">
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="brand-link">
+        <span aria-hidden="true">👑</span>
+        <span>
+          <span data-shop-name>Giabaoreg.com</span>
+          <span class="brand-sub">Uy Tín • Chất Lượng • Giá Rẻ</span>
+        </span>
+      </a>
 
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary sticky-top py-3">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="#" onclick="window.scrollTo({top:0, behavior:'smooth'})">
-                <div class="bg-warning text-dark p-2 rounded fw-bold fs-5 shadow d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <i class="fa-solid fa-crown"></i>
-                </div>
-                <div>
-                    <span id="nav-shop-name" class="font-gaming fw-bold fs-4 text-warning">Giabaoreg.com</span>
-                    <p class="small text-white mb-0" style="font-size: 11px;">Uy Tín • Chất Lượng • Giá Rẻ</p>
-                </div>
-            </a>
-            <div class="d-flex align-items-center gap-2">
-                <a id="nav-zalo-btn" href="#" target="_blank" class="btn btn-outline-info btn-sm d-none d-sm-inline-flex align-items-center gap-1 fw-bold">
-                    <i class="fa-solid fa-comment-dots"></i> Hỗ Trợ Zalo
-                </a>
-                <button onclick="openAdminModal()" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 fw-bold rgb-border px-3">
-                    <i class="fa-solid fa-user-shield"></i> Quản Lý Shop
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- HERO BANNER -->
-    <header class="py-5 border-bottom border-secondary bg-dark bg-opacity-50">
-        <div class="container text-center py-4">
-            <!-- ONLINE COUNTER BADGE -->
-            <div class="d-inline-flex align-items-center gap-2 bg-dark border border-secondary px-3 py-1.5 rounded-pill mb-3 shadow rgb-border">
-                <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
-                <span class="small text-white">Đang Online: <strong id="online-count" class="text-warning font-gaming">7</strong> người</span>
-            </div>
-
-            <h1 class="font-gaming fw-bold display-6 display-md-4 mb-3 text-white">KHO TÀI KHOẢN <span class="text-warning">LIÊN QUÂN MOBILE</span></h1>
-            <p class="text-white mx-auto mb-4 fs-6" style="max-width: 700px;">
-                Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger.
-            </p>
-
-            <div class="row g-2 justify-content-center mx-auto bg-dark border border-secondary p-3 rounded-4 shadow-lg rgb-border mb-4" style="max-width: 480px;">
-                <div class="col-4 border-end border-secondary">
-                    <div id="stat-total" class="font-gaming fs-4 fw-bold text-white">0</div>
-                    <div class="small text-white">Tổng Số Acc</div>
-                </div>
-                <div class="col-4 border-end border-secondary">
-                    <div id="stat-available" class="font-gaming fs-4 fw-bold text-success">0</div>
-                    <div class="small text-white">Còn Hàng</div>
-                </div>
-                <div class="col-4">
-                    <div id="stat-sold" class="font-gaming fs-4 fw-bold text-warning">0</div>
-                    <div class="small text-white">Đã Bán</div>
-                </div>
-            </div>
-
-            <!-- ĐIỀU KHOẢN & LƯU Ý CHO NGƯỜI MUA -->
-            <div class="card bg-dark text-start mx-auto shadow-lg rounded-4 p-4 rgb-border" style="max-width: 900px;">
-                <h5 class="text-warning font-gaming mb-3 fs-6 d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation"></i> ĐIỀU KHOẢN & LƯU Ý QUAN TRỌNG KHI MUA HÀNG
-                </h5>
-                <div class="row g-3 small text-white">
-                    <div class="col-md-6">
-                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
-                            <strong class="text-warning d-block mb-1">1. Cam kết tài khoản:</strong>
-                            100% tài khoản bán ra đều chuẩn mô tả. Sau khi nhận thông tin và đổi mật khẩu, shop chỉ bảo kê cho bạn trong vòng <b>12 tiếng tính từ lúc giao acc</b>, mọi trường hợp để lộ thông tin sau đó shop không bảo kê.
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
-                            <strong class="text-warning d-block mb-1">2. Trách nhiệm sau khi mua:</strong>
-                            Sau khi nhận thông tin và đổi mật khẩu thành công, khách hàng vui lòng tự bảo mật tài khoản. Shop không chịu trách nhiệm trong trường hợp khách tự ý cho mượn hoặc lộ thông tin.
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
-                            <strong class="text-warning d-block mb-1">3. Quy trình giao dịch:</strong>
-                            Khách hàng bấm "Chi Tiết & Mua" -> Bấm chốt qua Zalo/Messenger để gửi mã acc cho chủ shop. Kiểm tra kỹ tài khoản trước khi xác nhận thanh toán.
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3 bg-black border border-secondary rounded-3 h-100">
-                            <strong class="text-warning d-block mb-1">4. Chính sách hỗ trợ:</strong>
-                            Chủ shop sẽ hỗ trợ trong thời gian sớm nhất. Mọi thắc mắc hoặc cần hỗ trợ xử lý nhanh, vui lòng nhắn trực tiếp cho Zalo chủ shop.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN CONTENT -->
-    <main class="container py-5">
-
-        <!-- FILTER BAR -->
-        <div class="bg-dark border border-secondary p-4 rounded-4 mb-4 shadow-lg rgb-border">
-            <div class="row g-3">
-                <div class="col-lg-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-black border-secondary text-warning"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="filter-search" oninput="renderAccounts()" placeholder="Tìm theo mã số, tên skin..." class="form-control">
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <select id="filter-price" onchange="renderAccounts()" class="form-select">
-                        <option value="all">💰 Tất cả mức giá</option>
-                        <option value="under100">Dưới 100.000đ</option>
-                        <option value="100to300">100.000đ - 300.000đ</option>
-                        <option value="300to700">300.000đ - 700.000đ</option>
-                        <option value="above700">Trên 700.000đ (Acc VIP)</option>
-                    </select>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <select id="filter-rank" onchange="renderAccounts()" class="form-select">
-                        <option value="all">🏆 Tất cả mức Rank</option>
-                        <option value="Không Rank">Không Rank (Acc Reg)</option>
-                        <option value="Đồng">Đồng</option>
-                        <option value="Bạc">Bạc</option>
-                        <option value="Vàng">Vàng</option>
-                        <option value="Bạch Kim">Bạch Kim</option>
-                        <option value="Kim Cương">Kim Cương</option>
-                        <option value="Tinh Anh">Tinh Anh</option>
-                        <option value="Cao Thủ">Cao Thủ</option>
-                        <option value="Chiến Tướng">Chiến Tướng</option>
-                        <option value="Thách Đấu">Thách Đấu</option>
-                    </select>
-                </div>
-                <div class="col-lg-2">
-                    <select id="filter-status" onchange="renderAccounts()" class="form-select">
-                        <option value="all">📌 Trạng thái</option>
-                        <option value="available">✅ Còn hàng</option>
-                        <option value="sold">❌ Đã bán</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- ACCOUNT GRID -->
-        <div id="accounts-grid" class="row g-4"></div>
-
-        <!-- EMPTY STATE -->
-        <div id="empty-state" class="d-none text-center py-5 bg-dark border border-secondary rounded-4">
-            <i class="fa-solid fa-box-open fa-3x text-warning mb-3"></i>
-            <h5 class="text-white">Không tìm thấy tài khoản phù hợp</h5>
-            <p class="text-white small">Hãy thử tìm kiếm với từ khóa khác nhé!</p>
-            <button onclick="resetFilters()" class="btn btn-warning btn-sm fw-bold">Đặt Lại Bộ Lọc</button>
-        </div>
-
-        <!-- PHẦN ĐÁNH GIÁ SHOP / FEEDBACK KHÁCH HÀNG -->
-        <section class="mt-5 pt-4 border-top border-secondary">
-            <div class="text-center mb-4">
-                <h3 class="font-gaming text-white"><i class="fa-solid fa-star text-warning me-2"></i> ĐÁNH GIÁ TỪ <span class="text-warning">KHÁCH HÀNG</span></h3>
-                <p class="text-white small">Phản hồi thực tế từ những anh em đã giao dịch thành công tại shop</p>
-            </div>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card bg-dark h-100 rounded-4 p-4 rgb-border text-white">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-warning">
-                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                        </div>
-                        <p class="small text-white mb-3">"Shop uy tín vãi anh em ơi, mua acc Nakroth xong đổi pass cái một, nhân viên hỗ trợ nhiệt tình đúng 3 phút là xong việc."</p>
-                        <div class="d-flex align-items-center gap-2 mt-auto">
-                            <div class="bg-warning text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">H</div>
-                            <div>
-                                <h6 class="mb-0 small fw-bold text-white">Huy</h6>
-                                <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua #LQ01</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-dark h-100 rounded-4 p-4 rgb-border text-white">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-warning">
-                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                        </div>
-                        <p class="small text-white mb-3">"Acc trắng thông tin chuẩn 100% như mô tả. Giá học sinh mà nhiều skin ngon quá, sẽ ủng hộ shop dài dài!"</p>
-                        <div class="d-flex align-items-center gap-2 mt-auto">
-                            <div class="bg-info text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">T</div>
-                            <div>
-                                <h6 class="mb-0 small fw-bold text-white">Tuấn</h6>
-                                <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua #LQ02</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-dark h-100 rounded-4 p-4 rgb-border text-white">
-                        <div class="d-flex align-items-center gap-2 mb-2 text-warning">
-                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                        </div>
-                        <p class="small text-white mb-3">"Giao dịch nhanh gọn qua Zalo, chủ shop rep tin nhắn cực nhanh và hướng dẫn bảo mật rất kỹ. 10 điểm uy tín!"</p>
-                        <div class="d-flex align-items-center gap-2 mt-auto">
-                            <div class="bg-danger text-white fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">N</div>
-                            <div>
-                                <h6 class="mb-0 small fw-bold text-white">Nam</h6>
-                                <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua Acc VIP</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="border-top border-secondary bg-black py-4 mt-5">
-        <div class="container d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
-            <div>
-                <p id="footer-shop-name" class="font-gaming fw-bold text-warning mb-1 fs-5">Giabaoreg.com</p>
-                <p class="small text-white mb-0 fw-bold">CSKH • GDTG • HỖ TRỢ 24/7</p>
-            </div>
-            <div class="d-flex gap-2">
-                <a id="footer-zalo" href="#" target="_blank" class="btn btn-info btn-sm fw-bold"><i class="fa-solid fa-phone me-1"></i> Zalo Chủ Shop</a>
-                <a id="footer-fb" href="#" target="_blank" class="btn btn-primary btn-sm text-white fw-bold"><i class="fa-brands fa-facebook-messenger me-1"></i> Messenger</a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- MODAL CHI TIẾT & MUA HÀNG -->
-    <div class="modal fade" id="detailModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content bg-dark border border-warning text-white shadow-lg">
-                <div class="modal-header border-secondary bg-black">
-                    <div class="d-flex align-items-center gap-2">
-                        <span id="modal-code" class="badge bg-warning text-dark font-gaming fs-6">#LQ01</span>
-                        <h5 id="modal-title" class="modal-title fs-6 mb-0 text-truncate text-white" style="max-width: 400px;">Chi Tiết Acc</h5>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="row g-2 mb-4 text-center">
-                        <div class="col-3">
-                            <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-white" style="font-size: 11px;">Mức Rank</div>
-                                <div id="modal-rank" class="fw-bold text-warning small">Cao Thủ</div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-white" style="font-size: 11px;">Số Tướng</div>
-                                <div id="modal-heroes" class="fw-bold text-white small">115 Tướng</div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-white" style="font-size: 11px;">Trang Phục</div>
-                                <div id="modal-skins" class="fw-bold text-info small">240 Skin</div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-white" style="font-size: 11px;">Thông Tin</div>
-                                <div id="modal-info" class="fw-bold text-success small">Trắng TT</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-black border border-secondary p-3 rounded-3 mb-4">
-                        <h6 class="text-warning small fw-bold text-uppercase mb-2"><i class="fa-solid fa-list-check me-1"></i> Chi Tiết Skin VIP & Ghi Chú</h6>
-                        <p id="modal-desc" class="small text-white mb-0" style="white-space: pre-line; line-height: 1.6;"></p>
-                    </div>
-
-                    <div class="bg-gradient border border-warning border-opacity-50 p-3 rounded-3 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
-                        <div>
-                            <div class="small text-white">Giá Bán Công Khai:</div>
-                            <div class="d-flex align-items-baseline gap-2">
-                                <span id="modal-price" class="font-gaming fs-3 fw-bold text-warning">350.000đ</span>
-                                <span id="modal-old-price" class="small text-white text-decoration-line-through">500.000đ</span>
-                            </div>
-                        </div>
-                        <div id="modal-buy-actions" class="d-flex gap-2 w-100 w-sm-auto">
-                            <button onclick="copyOrderAndOpen('zalo')" class="btn btn-info btn-sm flex-fill fw-bold"><i class="fa-solid fa-comment-dots me-1"></i> Chốt Zalo</button>
-                            <button onclick="copyOrderAndOpen('fb')" class="btn btn-primary btn-sm text-white flex-fill fw-bold"><i class="fa-brands fa-facebook-messenger me-1"></i> Messenger</button>
-                        </div>
-                    </div>
-
-                    <h6 class="small fw-bold mb-3 text-white"><i class="fa-regular fa-images text-warning me-1"></i> Ảnh Chụp Kho Đồ & Tướng (Bấm vào ảnh để phóng to)</h6>
-                    <div id="modal-gallery" class="row g-2"></div>
-                </div>
-            </div>
-        </div>
+      <div class="header-actions">
+        <a id="zaloContactBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn">
+          💬 Hỗ Trợ Zalo
+        </a>
+        <a id="fbContactBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn" style="display:none;">
+          Messenger
+        </a>
+        <button id="openAdminBtn" type="button" class="btn btn-primary">
+          ⚙️ Quản Lý Shop
+        </button>
+      </div>
     </div>
+  </header>
 
-    <!-- MODAL LIGHTBOX ZOOM -->
-    <div class="modal fade" id="lightboxModal" tabindex="-1">
-        <div class="modal-dialog modal-fullscreen m-0 bg-black bg-opacity-95 d-flex align-items-center justify-content-center">
-            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-4 z-3" data-bs-dismiss="modal"></button>
-            <img id="lightbox-img" src="" class="img-fluid rounded shadow" style="max-height: 90vh;">
+  <main class="container">
+    <section class="hero">
+      <div class="online-pill">
+        <span class="online-dot"></span>
+        <span>Đang Online: <strong id="onlineCount">42</strong> người</span>
+      </div>
+
+      <h1>KHO TÀI KHOẢN LIÊN QUÂN MOBILE</h1>
+      <p>
+        Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger.
+      </p>
+
+      <div class="stats-bar">
+        <div class="stat-card">
+          <span id="statTotalAcc" class="stat-num">0</span>
+          <span class="stat-label">Tổng Số Acc</span>
         </div>
+        <div class="stat-card">
+          <span id="statAvailableAcc" class="stat-num" style="color:#4ade80;">0</span>
+          <span class="stat-label">Còn Hàng</span>
+        </div>
+        <div class="stat-card">
+          <span id="statSoldAcc" class="stat-num" style="color:#f87171;">0</span>
+          <span class="stat-label">Đã Bán</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="Bộ lọc và tìm kiếm tài khoản">
+      <div class="filter-group">
+        <button type="button" class="filter-btn active" data-filter="all">Tất cả</button>
+        <button type="button" class="filter-btn" data-filter="available">Còn hàng</button>
+        <button type="button" class="filter-btn" data-filter="under200">Dưới 200k</button>
+        <button type="button" class="filter-btn" data-filter="highrank">Rank cao</button>
+        <button type="button" class="filter-btn" data-filter="sold">Đã bán</button>
+      </div>
+
+      <div class="search-sort">
+        <input id="searchInput" type="search" class="input" placeholder="Tìm mã acc, rank, thông tin..." />
+        <select id="sortSelect" class="select" aria-label="Sắp xếp tài khoản">
+          <option value="default">Mới nhất</option>
+          <option value="price-asc">Giá: Thấp đến cao</option>
+          <option value="price-desc">Giá: Cao đến thấp</option>
+          <option value="skins-desc">Nhiều trang phục nhất</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="accountsGrid" class="accounts-grid" aria-live="polite"></section>
+
+    <section class="terms-box">
+      <h2>⚠️ ĐIỀU KHOẢN &amp; LƯU Ý QUAN TRỌNG KHI MUA HÀNG</h2>
+      <div class="terms-grid">
+        <div class="terms-item">
+          <strong>1. Cam kết tài khoản:</strong><br />
+          100% tài khoản bán ra đều chuẩn mô tả. Sau khi nhận thông tin và đổi mật khẩu, shop chỉ bảo kê cho bạn trong vòng <strong>12 tiếng</strong> tính từ lúc giao acc, mọi trường hợp để lộ thông tin sau đó shop không bảo kê.
+        </div>
+        <div class="terms-item">
+          <strong>2. Trách nhiệm sau khi mua:</strong><br />
+          Sau khi nhận thông tin và đổi mật khẩu thành công, khách hàng vui lòng tự bảo mật tài khoản, chịu trách nhiệm trong trường hợp khách hoặc lộ thông tin.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      © <span data-shop-name>Giabaoreg.com</span> — Kho tài khoản Liên Quân Mobile.
     </div>
+  </footer>
 
-    <!-- ADMIN PANEL MODAL -->
-    <div class="modal fade" id="adminModal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content bg-dark border border-warning text-white shadow-lg">
-                <div class="modal-header border-secondary bg-black">
-                    <h5 class="modal-title font-gaming text-warning fs-5"><i class="fa-solid fa-user-shield me-2"></i> HỆ THỐNG CÀI ĐẶT & QUẢN LÝ SHOP (ADMIN)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
+  <!-- Modal Chi Tiết Tài Khoản -->
+  <div id="detailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 id="detailTitle">Chi tiết tài khoản</h2>
+          <small id="detailCode" style="color:#94a3b8;"></small>
+        </div>
+        <button id="closeDetailBtn" type="button" class="btn">✕ Đóng</button>
+      </div>
 
-                <!-- Admin Login View -->
-                <div id="admin-login-view" class="modal-body p-5 text-center" style="max-width: 450px; margin: 0 auto;">
-                    <div class="bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 p-4 mb-3 text-warning fs-3 d-inline-block">
-                        <i class="fa-solid fa-lock"></i>
-                    </div>
-                    <h5 class="text-white mb-4">Đăng Nhập Chủ Shop</h5>
-                    <input type="password" id="admin-pass-input" onkeydown="if(event.key==='Enter') checkAdminLogin()" placeholder="Nhập mật khẩu..." class="form-control text-center mb-3 py-2">
-                    <button onclick="checkAdminLogin()" class="btn btn-gold w-100 py-2">Mở Bảng Điều Khiển</button>
-                </div>
+      <div style="margin-bottom:12px;">
+        <img id="detailMainImg" src="" alt="Ảnh chi tiết tài khoản" style="width:100%;max-height:360px;object-fit:cover;border-radius:12px;background:#090d16;" />
+        <div id="detailThumbs" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+      </div>
 
-                <!-- Admin Dashboard View -->
-                <div id="admin-dashboard-view" class="d-none modal-body p-4">
-                    <div class="bg-success bg-opacity-15 border border-success border-opacity-50 p-3 rounded-3 d-flex align-items-center justify-content-between gap-3 mb-4">
-                        <div>
-                            <h6 class="text-success fw-bold mb-1"><i class="fa-solid fa-circle-check me-1"></i> Tự Động Lưu Trữ & Đồng Bộ</h6>
-                            <p class="small text-white mb-0">Khi đã cấu hình Database Supabase, mọi acc và cài đặt shop sẽ đồng bộ trên mọi thiết bị và đường link.</p>
-                        </div>
-                    </div>
+      <div class="form-grid" style="background:#0b1220;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.14);">
+        <div>Rank: <strong id="detailRank"></strong></div>
+        <div>Số tướng: <strong id="detailHeroes"></strong></div>
+        <div>Số trang phục: <strong id="detailSkins"></strong></div>
+        <div>Bảo mật: <strong id="detailInfo"></strong></div>
+      </div>
 
-                    <ul class="nav nav-tabs border-secondary mb-4">
-                        <li class="nav-item">
-                            <button onclick="switchAdminTab('manage')" id="tab-btn-manage" class="nav-link active bg-transparent text-warning border-secondary fw-bold">📦 Quản Lý Tài Khoản</button>
-                        </li>
-                        <li class="nav-item">
-                            <button onclick="switchAdminTab('settings')" id="tab-btn-settings" class="nav-link bg-transparent text-white border-0 fw-bold">⚙️ Cài Đặt Shop & Liên Hệ</button>
-                        </li>
-                    </ul>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:4px;">Mô tả thêm:</div>
+        <div id="detailDesc" style="white-space:pre-line;background:#0b1220;padding:12px;border-radius:10px;"></div>
+      </div>
 
-                    <!-- Manage Tab -->
-                    <div id="admin-tab-manage">
-                        <div class="bg-black border border-secondary p-4 rounded-3 mb-4">
-                            <h6 id="form-acc-heading" class="text-warning small fw-bold mb-3 fs-6">➕ Đăng Tài Khoản Mới Lên Shop</h6>
-                            <input type="hidden" id="edit-acc-index" value="-1">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="small text-white mb-1">Mã Acc *</label>
-                                    <input type="text" id="inp-code" placeholder="VD: #LQ03" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-9">
-                                    <label class="small text-white mb-1">Tiêu Đề Nổi Bật *</label>
-                                    <input type="text" id="inp-title" placeholder="VD: Acc Nakroth Vệ Thần..." class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="small text-white mb-1">Giá Bán (VNĐ) *</label>
-                                    <input type="number" id="inp-price" placeholder="350000" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="small text-white mb-1">Giá Gốc Gạch Ngang</label>
-                                    <input type="number" id="inp-old-price" placeholder="500000" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="small text-white mb-1">Rank</label>
-                                    <select id="inp-rank" class="form-select form-select-sm">
-                                        <option value="Không Rank">Không Rank</option>
-                                        <option value="Đồng">Đồng</option>
-                                        <option value="Bạc">Bạc</option>
-                                        <option value="Vàng">Vàng</option>
-                                        <option value="Bạch Kim">Bạch Kim</option>
-                                        <option value="Kim Cương">Kim Cương</option>
-                                        <option value="Tinh Anh">Tinh Anh</option>
-                                        <option value="Cao Thủ">Cao Thủ</option>
-                                        <option value="Chiến Tướng">Chiến Tướng</option>
-                                        <option value="Thách Đấu">Thách Đấu</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="small text-white mb-1">Số Tướng</label>
-                                    <input type="number" id="inp-heroes" placeholder="115" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="small text-white mb-1">Số Skin</label>
-                                    <input type="number" id="inp-skins" placeholder="200" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="small text-white mb-1">Tình Trạng Thông Tin</label>
-                                    <input type="text" id="inp-info" value="Trắng thông tin" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="small text-white mb-1">Danh Sách Link Ảnh (Mỗi link 1 ảnh trên 1 dòng)</label>
-                                    <textarea id="inp-images" rows="2" placeholder="https://..." class="form-control form-control-sm font-monospace"></textarea>
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="small text-white mb-1">Mô Tả Chi Tiết Skin VIP & Ngọc</label>
-                                    <textarea id="inp-desc" rows="2" placeholder="Chi tiết skin..." class="form-control form-control-sm"></textarea>
-                                </div>
-                            </div>
-                            <div class="mt-3 d-flex gap-2">
-                                <button onclick="saveAccountFromForm()" class="btn btn-gold btn-sm px-4 fw-bold"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu Acc Vào Kho</button>
-                                <button onclick="resetAccountForm()" id="btn-cancel-edit" class="btn btn-outline-secondary btn-sm d-none">Hủy Sửa</button>
-                            </div>
-                        </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <span id="detailPrice" style="font-size:1.3rem;font-weight:800;color:#4ade80;"></span>
+          <del id="detailOldPrice" style="margin-left:8px;color:#64748b;font-size:0.9rem;"></del>
+        </div>
+        <button id="detailBuyBtn" type="button" class="btn btn-primary">Mua ngay</button>
+      </div>
+    </div>
+  </div>
 
-                        <div class="table-responsive bg-black border border-secondary rounded-3">
-                            <table class="table table-dark table-hover table-sm align-middle mb-0 small">
-                                <thead>
-                                    <tr>
-                                        <th class="p-3 text-warning">Mã</th>
-                                        <th class="p-3">Tiêu Đề</th>
-                                        <th class="p-3">Giá</th>
-                                        <th class="p-3">Trạng Thái</th>
-                                        <th class="p-3 text-end">Hành Động</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-acc-list"></tbody>
-                            </table>
-                        </div>
-                    </div>
+  <!-- Modal Quản Lý Shop (Admin) -->
+  <div id="adminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 id="adminModalTitle">Quản Lý Shop</h2>
+          <small id="adminUserEmail" style="color:#38bdf8;"></small>
+        </div>
+        <button id="closeAdminBtn" type="button" class="btn">✕ Đóng</button>
+      </div>
 
-                    <!-- Settings Tab -->
-                    <div id="admin-tab-settings" class="d-none bg-black border border-secondary p-4 rounded-3">
-                        <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-gear me-1"></i> Cài Đặt Thông Tin Chung Cho Shop</h6>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="small text-white mb-1">Tên Shop Của Bạn (Ví dụ: Giabaoreg.com)</label>
-                                <input type="text" id="cfg-shop-name" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-white mb-1">Số Điện Thoại Zalo (Nhận khách chốt đơn)</label>
-                                <input type="text" id="cfg-zalo" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-white mb-1">Link Facebook / Messenger</label>
-                                <input type="text" id="cfg-fb" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="small text-white mb-1">Mật Khẩu Quản Lý Shop</label>
-                                <input type="text" id="cfg-pass" class="form-control form-control-sm">
-                            </div>
-                        </div>
-                        <button onclick="saveShopSettings()" class="btn btn-gold btn-sm mt-3 px-4 fw-bold">Lưu Cài Đặt</button>
-                    </div>
-                </div>
+      <!-- Khung đăng nhập Admin -->
+      <div id="adminLoginBox">
+        <p style="color:#94a3b8;font-size:0.9rem;margin-top:0;">
+          Đăng nhập bằng tài khoản quản trị Email &amp; Mật khẩu đã tạo trên Supabase.
+        </p>
+        <form id="adminLoginForm">
+          <div class="form-field">
+            <label for="adminEmail">Email quản trị</label>
+            <input id="adminEmail" type="email" class="input" placeholder="nguyenducminh2011nd@gmail.com" required />
+          </div>
+          <div class="form-field">
+            <label for="adminPassword">Mật khẩu</label>
+            <input id="adminPassword" type="password" class="input" placeholder="Nhập mật khẩu..." required />
+          </div>
+          <button type="submit" class="btn btn-primary">Đăng nhập</button>
+        </form>
+      </div>
+
+      <!-- Khung quản trị sau khi đăng nhập -->
+      <div id="adminPanelBox" style="display:none;">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+          <button id="adminLogoutBtn" type="button" class="btn btn-danger">Đăng xuất</button>
+        </div>
+
+        <form id="accountForm" style="background:#0b1220;padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
+          <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản Liên Quân</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="accCode">Mã acc (*)</label>
+              <input id="accCode" type="text" class="input" placeholder="VD: LQ101" required />
             </div>
-        </div>
-    </div>
+            <div class="form-field">
+              <label for="accTitle">Tiêu đề acc (*)</label>
+              <input id="accTitle" type="text" class="input" placeholder="VD: Acc Rank Cao Thủ full skin..." required />
+            </div>
+            <div class="form-field">
+              <label for="accPrice">Giá bán (VNĐ)</label>
+              <input id="accPrice" type="number" class="input" min="0" step="1000" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="accOldPrice">Giá gốc (VNĐ)</label>
+              <input id="accOldPrice" type="number" class="input" min="0" step="1000" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="accRank">Rank</label>
+              <input id="accRank" type="text" class="input" placeholder="VD: Cao Thủ / Tinh Anh" />
+            </div>
+            <div class="form-field">
+              <label for="accHeroes">Số tướng</label>
+              <input id="accHeroes" type="number" class="input" min="0" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="accSkins">Số trang phục</label>
+              <input id="accSkins" type="number" class="input" min="0" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="accInfo">Trạng thái bảo mật</label>
+              <input id="accInfo" type="text" class="input" placeholder="VD: Trắng thông tin" />
+            </div>
+          </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="script.js"></script>
+          <div class="form-field">
+            <label for="accImages">Link ảnh (mỗi dòng 1 link hoặc cách nhau bởi dấu phẩy)</label>
+            <textarea id="accImages" rows="3" class="textarea" placeholder="https://..."></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="accDesc">Mô tả chi tiết</label>
+            <textarea id="accDesc" rows="2" class="textarea" placeholder="Mô tả thêm về acc..."></textarea>
+          </div>
+
+          <div class="form-field" style="flex-direction:row;align-items:center;gap:8px;">
+            <input id="accSold" type="checkbox" />
+            <label for="accSold" style="margin:0;">Đánh dấu tài khoản này là ĐÃ BÁN</label>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="saveAccountBtn" type="submit" class="btn btn-primary">Thêm tài khoản mới</button>
+            <button id="cancelEditBtn" type="button" class="btn" style="display:none;">Hủy sửa</button>
+          </div>
+        </form>
+
+        <form id="configForm" style="background:#0b1220;padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
+          <h3 style="margin:0 0 12px;font-size:1rem;">Cấu hình thông tin shop</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="cfgShopName">Tên shop</label>
+              <input id="cfgShopName" type="text" class="input" />
+            </div>
+            <div class="form-field">
+              <label for="cfgZalo">Link Zalo hỗ trợ</label>
+              <input id="cfgZalo" type="url" class="input" />
+            </div>
+            <div class="form-field">
+              <label for="cfgFb">Link Facebook / Messenger</label>
+              <input id="cfgFb" type="url" class="input" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu cấu hình shop</button>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Tiêu đề</th>
+                <th>Giá</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminAccountsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bắt buộc tải thư viện Supabase JS trước script.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
 </body>
 </html>
