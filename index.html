@@ -154,6 +154,20 @@
       cursor: not-allowed;
     }
 
+    .btn-zalo {
+      background: linear-gradient(135deg, #0284c7, #00a8ff);
+      border-color: rgba(125, 211, 252, 0.35);
+      color: #fff;
+      box-shadow: 0 5px 18px rgba(2, 132, 199, 0.35);
+    }
+
+    .btn-mess {
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      border-color: rgba(244, 114, 182, 0.35);
+      color: #fff;
+      box-shadow: 0 5px 18px rgba(124, 58, 237, 0.35);
+    }
+
     .btn-primary {
       background: linear-gradient(135deg, #3b82f6, #06b6d4, #8b5cf6);
       background-size: 200% 200%;
@@ -219,10 +233,20 @@
     }
 
     .hero p {
-      margin: 0 auto 20px;
+      margin: 0 auto 16px;
       max-width: 720px;
       color: var(--text-muted);
       font-size: 0.96rem;
+    }
+
+    /* Thanh nút hỗ trợ Zalo & Messenger nổi bật ngay trên màn hình chính */
+    .quick-support-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 0 auto 22px;
     }
 
     .stats-bar {
@@ -250,7 +274,6 @@
       color: var(--text-muted);
     }
 
-    /* Đưa mục điều khoản lên phía trên */
     .terms-box {
       padding: 18px 20px;
       margin-bottom: 20px;
@@ -600,11 +623,11 @@
       </a>
 
       <div class="header-actions">
-        <a id="zaloContactBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn">
+        <a id="zaloContactBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn btn-zalo">
           💬 Hỗ Trợ Zalo
         </a>
-        <a id="fbContactBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn" style="display:none;">
-          Messenger
+        <a id="fbContactBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
+          ⚡ Hỗ Trợ Messenger
         </a>
         <button id="openAdminBtn" type="button" class="btn btn-primary">
           ⚙️ Quản Lý Shop
@@ -624,6 +647,16 @@
       <p>
         Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger.
       </p>
+
+      <!-- Nút hỗ trợ Zalo & Messenger nổi bật ngay trên màn hình chính -->
+      <div class="quick-support-bar">
+        <a id="mainZaloBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn btn-zalo">
+          💬 Hỗ Trợ Qua Zalo
+        </a>
+        <a id="mainMessBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
+          ⚡ Hỗ Trợ Qua Messenger
+        </a>
+      </div>
 
       <div class="stats-bar">
         <div class="stat-card rgb-frame">
