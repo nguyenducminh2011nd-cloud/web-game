@@ -1,5 +1,5 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (SUPABASE + STORAGE UPLOAD + SYNC)
+   GIABAOREG.COM - SCRIPT.JS (STABLE MOBILE + SUPABASE SYNC)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
@@ -58,6 +58,8 @@ let activeDetailAccId = null;
 let editingAccId = null;
 let onlineCount = 7;
 let selectedUploadFiles = [];
+let isSavingAccount = false;
+let realtimeTimer = null;
 
 function createSupabaseInstance() {
   const globalLib = window.supabase;
@@ -71,7 +73,7 @@ function createSupabaseInstance() {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: false
     }
   });
 }
@@ -92,6 +94,16 @@ function escapeHtml(str) {
 
 function cleanPhone(raw) {
   return String(raw || "").replace(/\D+/g, "");
+}
+
+function isUserTypingInForm() {
+  const active = document.activeElement;
+  if (!active) return false;
+  const tag = active.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+    return Boolean(active.closest("#adminModal"));
+  }
+  return false;
 }
 
 function showToast(message, type = "info") {
@@ -295,10 +307,18 @@ function applyShopConfigToUI() {
   const cfgPhoneInput = document.getElementById("cfgZaloPhone");
   const cfgZaloInput = document.getElementById("cfgZalo");
   const cfgFbInput = document.getElementById("cfgFb");
-  if (cfgNameInput) cfgNameInput.value = shopConfig.shop_name || "";
-  if (cfgPhoneInput) cfgPhoneInput.value = shopConfig.zalo_phone || digits || "";
-  if (cfgZaloInput) cfgZaloInput.value = zaloHref;
-  if (cfgFbInput) cfgFbInput.value = fbHref;
+  if (cfgNameInput && document.activeElement !== cfgNameInput) {
+    cfgNameInput.value = shopConfig.shop_name || "";
+  }
+  if (cfgPhoneInput && document.activeElement !== cfgPhoneInput) {
+    cfgPhoneInput.value = shopConfig.zalo_phone || digits || "";
+  }
+  if (cfgZaloInput && document.activeElement !== cfgZaloInput) {
+    cfgZaloInput.value = zaloHref;
+  }
+  if (cfgFbInput && document.activeElement !== cfgFbInput) {
+    cfgFbInput.value = fbHref;
+  }
 }
 
 async function fetchShopConfig() {
@@ -336,7 +356,11 @@ async function fetchShopConfig() {
   }
 }
 
-async function fetchAccounts(notifyError = false) {
+async function fetchAccounts(notifyError = false, forceRender = false) {
+  if (!forceRender && isUserTypingInForm()) {
+    return;
+  }
+
   if (!sbClient) {
     isSupabaseConnected = false;
     accountsData = [...DEMO_ACCOUNTS];
@@ -370,7 +394,9 @@ async function fetchAccounts(notifyError = false) {
     const rows = Array.isArray(data) ? data.map(normalizeAccountRow) : [];
     accountsData = rows.length > 0 ? rows : currentUser ? [] : [...DEMO_ACCOUNTS];
     renderAccounts();
-    renderAdminTable();
+    if (!isUserTypingInForm()) {
+      renderAdminTable();
+    }
     updateStats();
   } catch (err) {
     console.error("Ngoại lệ khi tải accounts:", err);
@@ -621,9 +647,11 @@ async function openAdminModal() {
   const modal = document.getElementById("adminModal");
   if (!modal) return;
 
-  modal.style.display = "flex";
+  if (modal.style.display !== "flex") {
+    modal.style.display = "flex";
+  }
 
-  if (sbClient && sbClient.auth && typeof sbClient.auth.getSession === "function") {
+  if (sbClient && sbClient.auth && typeof sbClient.auth.getSession === "function" && !currentUser) {
     try {
       const { data } = await sbClient.auth.getSession();
       currentUser = data?.session?.user || null;
@@ -672,7 +700,7 @@ async function handleAdminLogin(e) {
     currentUser = data?.user || null;
     if (passInput) passInput.value = "";
     syncAuthUI();
-    await Promise.all([fetchShopConfig(), fetchAccounts(true)]);
+    await Promise.all([fetchShopConfig(), fetchAccounts(true, true)]);
     showToast("Đăng nhập quản trị thành công!", "success");
   } catch (err) {
     showToast("Lỗi kết nối khi đăng nhập: " + (err?.message || err), "error");
@@ -688,7 +716,7 @@ async function handleAdminLogout() {
   currentUser = null;
   resetAccountForm();
   syncAuthUI();
-  await fetchAccounts(false);
+  await fetchAccounts(false, true);
   showToast("Đã đăng xuất khỏi phiên quản trị.", "info");
 }
 
@@ -746,6 +774,16 @@ function startEditAccount(id) {
 
 async function handleSaveAccount(e) {
   e.preventDefault();
+  if (isSavingAccount) return;
+
+  if (!currentUser && sbClient?.auth) {
+    try {
+      const { data } = await sbClient.auth.getSession();
+      currentUser = data?.session?.user || null;
+      syncAuthUI();
+    } catch {}
+  }
+
   if (!currentUser) {
     showToast("Bạn cần đăng nhập Admin trước khi thêm/sửa acc.", "warning");
     return;
@@ -765,64 +803,64 @@ async function handleSaveAccount(e) {
     return;
   }
 
+  isSavingAccount = true;
   const submitBtn = document.getElementById("saveAccountBtn");
   if (submitBtn) submitBtn.disabled = true;
 
-  let uploadedUrls = [];
   try {
+    let uploadedUrls = [];
     if (selectedUploadFiles.length > 0) {
       showToast(`Đang tải ${selectedUploadFiles.length} ảnh lên...`, "info");
       uploadedUrls = await uploadSelectedAccountFiles();
     }
+
+    const manualImgs = normalizeImages(getVal("accImages")).filter((u) => u !== FALLBACK_IMG);
+    const finalImages =
+      uploadedUrls.length > 0
+        ? [...uploadedUrls, ...manualImgs]
+        : normalizeImages(getVal("accImages"));
+
+    const payload = {
+      code,
+      title,
+      price: getNum("accPrice"),
+      rank: getVal("accRank") || "Acc reg",
+      heroes: getNum("accHeroes"),
+      skins: getNum("accSkins"),
+      info: getVal("accInfo") || "Trắng thông tin",
+      images: finalImages,
+      description: getVal("accDesc"),
+      sold: Boolean(document.getElementById("accSold")?.checked)
+    };
+
+    if (editingAccId !== null) {
+      const { error } = await sbClient
+        .from("accounts")
+        .update(payload)
+        .eq("id", editingAccId);
+
+      if (error) {
+        showToast("Cập nhật acc lỗi: " + error.message, "error");
+        return;
+      }
+      showToast(`Đã cập nhật tài khoản #${code}.`, "success");
+    } else {
+      const { error } = await sbClient.from("accounts").insert([payload]);
+      if (error) {
+        showToast("Thêm acc lỗi: " + error.message, "error");
+        return;
+      }
+      showToast(`Đã thêm tài khoản #${code} lên Supabase!`, "success");
+    }
+
+    resetAccountForm();
+    await fetchAccounts(true, true);
   } catch (err) {
+    showToast(err?.message || "Lỗi khi lưu tài khoản.", "error");
+  } finally {
+    isSavingAccount = false;
     if (submitBtn) submitBtn.disabled = false;
-    showToast(err.message || "Lỗi khi tải ảnh lên.", "error");
-    return;
   }
-
-  const manualImgs = normalizeImages(getVal("accImages")).filter((u) => u !== FALLBACK_IMG);
-  const finalImages =
-    uploadedUrls.length > 0
-      ? [...uploadedUrls, ...manualImgs]
-      : normalizeImages(getVal("accImages"));
-
-  const payload = {
-    code,
-    title,
-    price: getNum("accPrice"),
-    rank: getVal("accRank") || "Acc reg",
-    heroes: getNum("accHeroes"),
-    skins: getNum("accSkins"),
-    info: getVal("accInfo") || "Trắng thông tin",
-    images: finalImages,
-    description: getVal("accDesc"),
-    sold: Boolean(document.getElementById("accSold")?.checked)
-  };
-
-  if (editingAccId !== null) {
-    const { error } = await sbClient
-      .from("accounts")
-      .update(payload)
-      .eq("id", editingAccId);
-
-    if (submitBtn) submitBtn.disabled = false;
-    if (error) {
-      showToast("Cập nhật acc lỗi: " + error.message, "error");
-      return;
-    }
-    showToast(`Đã cập nhật tài khoản #${code}.`, "success");
-  } else {
-    const { error } = await sbClient.from("accounts").insert([payload]);
-    if (submitBtn) submitBtn.disabled = false;
-    if (error) {
-      showToast("Thêm acc lỗi: " + error.message, "error");
-      return;
-    }
-    showToast(`Đã thêm tài khoản #${code} lên Supabase!`, "success");
-  }
-
-  resetAccountForm();
-  await fetchAccounts(true);
 }
 
 async function toggleSoldStatus(id) {
@@ -847,7 +885,7 @@ async function toggleSoldStatus(id) {
     !acc.sold ? `Đã đánh dấu #${acc.code} là ĐÃ BÁN.` : `Đã mở bán lại #${acc.code}.`,
     "success"
   );
-  await fetchAccounts(true);
+  await fetchAccounts(true, true);
 }
 
 async function deleteAccount(id) {
@@ -874,7 +912,7 @@ async function deleteAccount(id) {
     resetAccountForm();
   }
   showToast(`Đã xóa ${label}.`, "success");
-  await fetchAccounts(true);
+  await fetchAccounts(true, true);
 }
 
 async function handleSaveConfig(e) {
@@ -967,6 +1005,15 @@ function renderAdminTable() {
     .join("");
 }
 
+function scheduleRealtimeRefresh(fn) {
+  if (realtimeTimer) clearTimeout(realtimeTimer);
+  realtimeTimer = setTimeout(() => {
+    if (!isUserTypingInForm() && !isSavingAccount) {
+      fn();
+    }
+  }, 600);
+}
+
 function subscribeRealtime() {
   if (!sbClient || typeof sbClient.channel !== "function") return;
   try {
@@ -976,14 +1023,14 @@ function subscribeRealtime() {
         "postgres_changes",
         { event: "*", schema: "public", table: "accounts" },
         () => {
-          fetchAccounts(false);
+          scheduleRealtimeRefresh(() => fetchAccounts(false, false));
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "shop_config" },
         () => {
-          fetchShopConfig();
+          scheduleRealtimeRefresh(() => fetchShopConfig());
         }
       )
       .subscribe();
@@ -1072,7 +1119,7 @@ function bindEvents() {
   const syncNowBtn = document.getElementById("syncNowBtn");
   if (syncNowBtn) {
     syncNowBtn.addEventListener("click", async () => {
-      await Promise.all([fetchShopConfig(), fetchAccounts(true)]);
+      await Promise.all([fetchShopConfig(), fetchAccounts(true, true)]);
       showToast("Đã đồng bộ dữ liệu mới nhất từ Supabase.", "success");
     });
   }
@@ -1131,7 +1178,7 @@ async function initApp() {
       syncAuthUI();
     });
 
-    await Promise.all([fetchShopConfig(), fetchAccounts(false)]);
+    await Promise.all([fetchShopConfig(), fetchAccounts(false, true)]);
     subscribeRealtime();
   } catch (err) {
     console.error("Lỗi khởi tạo ứng dụng:", err);
