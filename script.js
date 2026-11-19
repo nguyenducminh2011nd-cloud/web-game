@@ -400,12 +400,14 @@ function saveShopSettings() {
     alert("Đã lưu cài đặt shop!");
 }
 
-// Bộ đếm online mô phỏng
+// ==========================================
+// 5. BỘ ĐẾM ONLINE TỰ NHIÊN (5 - 10 NGƯỜI)
+// ==========================================
 setInterval(() => {
     const el = document.getElementById("online-count");
     if (!el) return;
-    const current = Number(el.textContent) || 28;
-    const next = Math.max(18, Math.min(45, current + (Math.random() > 0.5 ? 1 : -1)));
+    const current = Number(el.textContent) || 7;
+    const next = Math.max(5, Math.min(10, current + (Math.random() > 0.5 ? 1 : -1)));
     el.textContent = next;
 }, 5000);
 
