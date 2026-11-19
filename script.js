@@ -1,10 +1,11 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (SUPABASE + ADMIN AUTH + SYNC)
+   GIABAOREG.COM - SCRIPT.JS (SUPABASE + STORAGE UPLOAD + SYNC)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_o8O08I4ZFykn4f7It54BmA_tr_8lhDq";
 const ADMIN_DEFAULT_EMAIL = "nguyenducminh2011nd@gmail.com";
+const STORAGE_BUCKET = "account-images";
 
 const FALLBACK_IMG =
   "data:image/svg+xml;charset=UTF-8," +
@@ -56,6 +57,7 @@ let detailGalleryIndex = 0;
 let activeDetailAccId = null;
 let editingAccId = null;
 let onlineCount = 7;
+let selectedUploadFiles = [];
 
 function createSupabaseInstance() {
   const globalLib = window.supabase;
@@ -165,7 +167,7 @@ function normalizeAccountRow(row) {
     code: String(row.code || "LQ").trim(),
     title: String(row.title || "Tài khoản Liên Quân").trim(),
     price: Number(row.price) || 0,
-    rank: String(row.rank || "Không Rank").trim(),
+    rank: String(row.rank || "Acc reg").trim(),
     heroes: Number(row.heroes) || 0,
     skins: Number(row.skins) || 0,
     info: String(row.info || "Trắng thông tin").trim(),
@@ -177,9 +179,67 @@ function normalizeAccountRow(row) {
   };
 }
 
+function renderUploadPreviews() {
+  const box = document.getElementById("uploadPreviewList");
+  if (!box) return;
+  if (!selectedUploadFiles.length) {
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = selectedUploadFiles
+    .map((file, idx) => {
+      const blobUrl = URL.createObjectURL(file);
+      return `
+        <div style="position:relative;width:74px;height:54px;">
+          <img src="${blobUrl}" alt="${escapeHtml(file.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid rgba(56,189,248,0.5);" />
+          <span style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,0.75);color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">#${idx + 1}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function uploadSelectedAccountFiles() {
+  if (!selectedUploadFiles.length) return [];
+  if (!sbClient || !currentUser) {
+    throw new Error("Cần đăng nhập Admin trước khi tải ảnh lên.");
+  }
+
+  const uploadedUrls = [];
+  for (let i = 0; i < selectedUploadFiles.length; i++) {
+    const file = selectedUploadFiles[i];
+    const ext =
+      (file.name.split(".").pop() || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "") || "jpg";
+    const filePath = `acc_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+
+    const { error: upError } = await sbClient.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "image/jpeg"
+      });
+
+    if (upError) {
+      throw new Error("Tải ảnh lỗi (" + file.name + "): " + upError.message);
+    }
+
+    const { data: pubData } = sbClient.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    if (pubData?.publicUrl) {
+      uploadedUrls.push(pubData.publicUrl);
+    }
+  }
+  return uploadedUrls;
+}
+
 function startOnlineCounter() {
   const el = document.getElementById("onlineCount");
-  onlineCount = Math.floor(Math.random() * 6) + 5; // 5 đến 10 người
+  onlineCount = Math.floor(Math.random() * 6) + 5;
   const updateText = () => {
     if (el) el.textContent = String(onlineCount);
   };
@@ -264,7 +324,9 @@ async function fetchShopConfig() {
         id: 1,
         shop_name: data.shop_name || DEFAULT_CONFIG.shop_name,
         zalo_phone: extractedPhone,
-        zalo: data.zalo || (extractedPhone ? `https://zalo.me/${extractedPhone}` : DEFAULT_CONFIG.zalo),
+        zalo:
+          data.zalo ||
+          (extractedPhone ? `https://zalo.me/${extractedPhone}` : DEFAULT_CONFIG.zalo),
         fb: data.fb || DEFAULT_CONFIG.fb
       };
       applyShopConfigToUI();
@@ -535,7 +597,7 @@ function closeDetailModal() {
 }
 
 /* =========================================================
-   ADMIN AUTHENTICATION & MANAGEMENT (SUPABASE RLS)
+   ADMIN AUTHENTICATION & MANAGEMENT (SUPABASE RLS + STORAGE)
    ========================================================= */
 
 function syncAuthUI() {
@@ -627,6 +689,12 @@ async function handleAdminLogout() {
 
 function resetAccountForm() {
   editingAccId = null;
+  selectedUploadFiles = [];
+  renderUploadPreviews();
+
+  const fileInput = document.getElementById("accFiles");
+  if (fileInput) fileInput.value = "";
+
   const form = document.getElementById("accountForm");
   if (form) form.reset();
 
@@ -644,6 +712,8 @@ function startEditAccount(id) {
   }
 
   editingAccId = acc.id;
+  selectedUploadFiles = [];
+  renderUploadPreviews();
 
   const setVal = (elId, val) => {
     const el = document.getElementById(elId);
@@ -690,15 +760,36 @@ async function handleSaveAccount(e) {
     return;
   }
 
+  const submitBtn = document.getElementById("saveAccountBtn");
+  if (submitBtn) submitBtn.disabled = true;
+
+  let uploadedUrls = [];
+  try {
+    if (selectedUploadFiles.length > 0) {
+      showToast(`Đang tải ${selectedUploadFiles.length} ảnh lên...`, "info");
+      uploadedUrls = await uploadSelectedAccountFiles();
+    }
+  } catch (err) {
+    if (submitBtn) submitBtn.disabled = false;
+    showToast(err.message || "Lỗi khi tải ảnh lên.", "error");
+    return;
+  }
+
+  const manualImgs = normalizeImages(getVal("accImages")).filter((u) => u !== FALLBACK_IMG);
+  const finalImages =
+    uploadedUrls.length > 0
+      ? [...uploadedUrls, ...manualImgs]
+      : normalizeImages(getVal("accImages"));
+
   const payload = {
     code,
     title,
     price: getNum("accPrice"),
-    rank: getVal("accRank") || "Không Rank",
+    rank: getVal("accRank") || "Acc reg",
     heroes: getNum("accHeroes"),
     skins: getNum("accSkins"),
     info: getVal("accInfo") || "Trắng thông tin",
-    images: normalizeImages(getVal("accImages")),
+    images: finalImages,
     description: getVal("accDesc"),
     sold: Boolean(document.getElementById("accSold")?.checked)
   };
@@ -709,6 +800,7 @@ async function handleSaveAccount(e) {
       .update(payload)
       .eq("id", editingAccId);
 
+    if (submitBtn) submitBtn.disabled = false;
     if (error) {
       showToast("Cập nhật acc lỗi: " + error.message, "error");
       return;
@@ -716,6 +808,7 @@ async function handleSaveAccount(e) {
     showToast(`Đã cập nhật tài khoản #${code}.`, "success");
   } else {
     const { error } = await sbClient.from("accounts").insert([payload]);
+    if (submitBtn) submitBtn.disabled = false;
     if (error) {
       showToast("Thêm acc lỗi: " + error.message, "error");
       return;
@@ -810,7 +903,6 @@ async function handleSaveConfig(e) {
     .from("shop_config")
     .upsert(nextConfig, { onConflict: "id" });
 
-  // Dự phòng nếu bảng shop_config chưa thêm cột zalo_phone
   if (error && /zalo_phone/i.test(error.message)) {
     const fallbackCfg = {
       id: 1,
@@ -947,6 +1039,14 @@ function bindEvents() {
     searchInput.addEventListener("input", (e) => {
       searchKeyword = e.target.value || "";
       renderAccounts();
+    });
+  }
+
+  const fileInput = document.getElementById("accFiles");
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      selectedUploadFiles = Array.from(e.target.files || []);
+      renderUploadPreviews();
     });
   }
 
