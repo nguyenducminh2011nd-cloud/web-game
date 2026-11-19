@@ -1,458 +1,902 @@
-// ==========================================
-// 1. CẤU HÌNH DATABASE CHUNG (SUPABASE)
-// Điền SUPABASE_URL và SUPABASE_ANON_KEY để đồng bộ mọi máy & mọi link
-// ==========================================
-const SUPABASE_URL = ""; // VD: "https://xxxx.supabase.co"
-const SUPABASE_ANON_KEY = ""; // VD: "eyJhbGciOi..."
-const SUPABASE_TABLE = "accounts";
-const SUPABASE_CONFIG_TABLE = "shop_config";
+/* =========================================================
+   GIABAOREG.COM - SCRIPT.JS (SUPABASE + ADMIN AUTH + SYNC)
+   ========================================================= */
+
+const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_o8O08I4ZFykn4f7It54BmA_tr_8lhDq";
+
+const FALLBACK_IMG =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="600" height="360" viewBox="0 0 600 360">
+      <rect width="600" height="360" fill="#121826"/>
+      <rect x="18" y="18" width="564" height="324" rx="18" fill="none" stroke="#2d3b55" stroke-width="2" stroke-dasharray="8 6"/>
+      <text x="300" y="168" fill="#9fb0cc" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle">GIABAOREG.COM</text>
+      <text x="300" y="202" fill="#64748b" font-family="Arial, sans-serif" font-size="15" text-anchor="middle">Dang cap nhat anh tai khoan Lien Quan</text>
+    </svg>
+  `);
 
 const DEFAULT_CONFIG = {
-    shopName: "Giabaoreg.com",
-    zalo: "https://zalo.me/",
-    fb: "https://m.me/",
-    adminPass: "123456"
+  id: 1,
+  shop_name: "Giabaoreg.com",
+  zalo: "https://zalo.me/",
+  fb: "https://m.me/"
 };
 
-let shopConfig = JSON.parse(localStorage.getItem("giabaoreg_config")) || { ...DEFAULT_CONFIG };
-let accounts = JSON.parse(localStorage.getItem("giabaoreg_accounts")) || [];
-let selectedAcc = null;
+const DEFAULT_ACCOUNTS = [
+  {
+    id: 1,
+    code: "LQ001",
+    title: "Acc Lien Quan Rank Cao Thu - Nhieu Trang Phuc Tuyet Sac",
+    price: 450000,
+    old_price: 650000,
+    rank: "Cao Thủ",
+    heroes: 112,
+    skins: 168,
+    info: "Trắng thông tin (Đổi mail / SDT)",
+    images: [FALLBACK_IMG],
+    description: "Acc sạch đẹp, vào game chiến ngay, hỗ trợ bàn giao đầy đủ thông tin.",
+    sold: false
+  },
+  {
+    id: 2,
+    code: "LQ002",
+    title: "Acc Lien Quan Rank Tinh Anh - Tuong Du Cho Leo Rank",
+    price: 180000,
+    old_price: 260000,
+    rank: "Tinh Anh",
+    heroes: 86,
+    skins: 74,
+    info: "Trắng thông tin",
+    images: [FALLBACK_IMG],
+    description: "Phù hợp anh em chơi giải trí và cày rank mùa mới.",
+    sold: false
+  }
+];
 
-function hasSupabase() {
-    return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+let sbClient = null;
+let currentUser = null;
+let accountsData = [...DEFAULT_ACCOUNTS];
+let shopConfig = { ...DEFAULT_CONFIG };
+let currentFilter = "all";
+let currentSort = "default";
+let searchKeyword = "";
+let detailGalleryIndex = 0;
+let activeDetailAccId = null;
+let editingAccId = null;
+let onlineCount = 42;
+
+function createSupabaseInstance() {
+  const globalLib = window.supabase;
+  if (!globalLib || typeof globalLib.createClient !== "function") {
+    return null;
+  }
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return null;
+  }
+  return globalLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
 }
 
-async function sbRequest(path, method = "GET", body = null) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-        method,
-        headers: {
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": method === "POST" ? "return=representation" : ""
-        },
-        body: body ? JSON.stringify(body) : null
+function formatVND(num) {
+  const n = Number(num) || 0;
+  return n.toLocaleString("vi-VN") + "đ";
+}
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function showToast(message, type = "info") {
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.style.cssText =
+      "position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:340px;";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  const bgMap = {
+    success: "#166534",
+    error: "#991b1b",
+    warning: "#854d0e",
+    info: "#1e293b"
+  };
+  toast.textContent = message;
+  toast.style.cssText = `
+    background:${bgMap[type] || bgMap.info};
+    color:#fff;
+    padding:11px 15px;
+    border-radius:10px;
+    font-size:13.5px;
+    line-height:1.4;
+    box-shadow:0 10px 25px rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.14);
+    transition:opacity 0.25s ease, transform 0.25s ease;
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(8px)";
+    setTimeout(() => toast.remove(), 260);
+  }, 3200);
+}
+
+function normalizeImages(rawImages) {
+  let list = [];
+  if (Array.isArray(rawImages)) {
+    list = rawImages;
+  } else if (typeof rawImages === "string" && rawImages.trim()) {
+    try {
+      const parsed = JSON.parse(rawImages);
+      if (Array.isArray(parsed)) {
+        list = parsed;
+      } else {
+        list = rawImages.split(/[\n,]+/);
+      }
+    } catch {
+      list = rawImages.split(/[\n,]+/);
+    }
+  }
+
+  const cleaned = list
+    .map((item) => String(item || "").trim())
+    .filter((url) => {
+      if (!url) return false;
+      if (url.startsWith("data:image/")) return true;
+      try {
+        const u = new URL(url);
+        return u.protocol === "http:" || u.protocol === "https:";
+      } catch {
+        return false;
+      }
     });
-    if (!res.ok) throw new Error(`Supabase error ${res.status}`);
-    return method === "DELETE" ? null : res.json();
+
+  return cleaned.length > 0 ? cleaned : [FALLBACK_IMG];
 }
 
-async function loadConfigFromCloud() {
-    applyShopConfig();
-    if (!hasSupabase()) return;
-    try {
-        const rows = await sbRequest(`${SUPABASE_CONFIG_TABLE}?select=*&id=eq.1`);
-        if (rows && rows[0]) {
-            shopConfig = {
-                shopName: rows[0].shop_name || DEFAULT_CONFIG.shopName,
-                zalo: rows[0].zalo || DEFAULT_CONFIG.zalo,
-                fb: rows[0].fb || DEFAULT_CONFIG.fb,
-                adminPass: rows[0].admin_pass || DEFAULT_CONFIG.adminPass
-            };
-            localStorage.setItem("giabaoreg_config", JSON.stringify(shopConfig));
-            applyShopConfig();
-        }
-    } catch (err) {
-        console.warn("Chưa dùng bảng shop_config hoặc dùng local:", err);
-    }
+function normalizeAccountRow(row) {
+  return {
+    id: Number(row.id),
+    code: String(row.code || "LQ").trim(),
+    title: String(row.title || "Tài khoản Liên Quân").trim(),
+    price: Number(row.price) || 0,
+    old_price: Number(row.old_price) || 0,
+    rank: String(row.rank || "Không Rank").trim(),
+    heroes: Number(row.heroes) || 0,
+    skins: Number(row.skins) || 0,
+    info: String(row.info || "Trắng thông tin").trim(),
+    images: normalizeImages(row.images),
+    description: String(row.description || "").trim(),
+    sold: Boolean(row.sold),
+    created_at: row.created_at || null
+  };
 }
 
-async function syncConfigToCloud() {
-    localStorage.setItem("giabaoreg_config", JSON.stringify(shopConfig));
-    if (!hasSupabase()) return;
-    try {
-        const payload = {
-            id: 1,
-            shop_name: shopConfig.shopName,
-            zalo: shopConfig.zalo,
-            fb: shopConfig.fb,
-            admin_pass: shopConfig.adminPass
-        };
-        await sbRequest(`${SUPABASE_CONFIG_TABLE}?id=eq.1`, "PATCH", payload).catch(async () => {
-            await sbRequest(`${SUPABASE_CONFIG_TABLE}`, "POST", payload);
-        });
-    } catch (err) {
-        console.warn("Không đồng bộ được cấu hình lên Supabase:", err);
-    }
+function startOnlineCounter() {
+  const el = document.getElementById("onlineCount");
+  const updateText = () => {
+    if (el) el.textContent = String(onlineCount);
+  };
+  updateText();
+
+  setInterval(() => {
+    const delta = Math.floor(Math.random() * 5) - 2; // -2 đến +2
+    onlineCount = Math.max(24, Math.min(98, onlineCount + delta));
+    updateText();
+  }, 4500);
 }
 
-async function loadAccountsFromCloud() {
-    localStorage.setItem("giabaoreg_accounts", JSON.stringify(accounts));
-    if (hasSupabase()) {
-        try {
-            const rows = await sbRequest(`${SUPABASE_TABLE}?select=*&order=id.desc`);
-            accounts = rows.map(r => ({
-                id: r.id,
-                code: r.code || "",
-                title: r.title || "",
-                price: Number(r.price) || 0,
-                oldPrice: Number(r.old_price) || 0,
-                rank: r.rank || "Không Rank",
-                heroes: Number(r.heroes) || 0,
-                skins: Number(r.skins) || 0,
-                info: r.info || "Trắng thông tin",
-                images: Array.isArray(r.images) ? r.images : [],
-                desc: r.description || "",
-                sold: Boolean(r.sold)
-            }));
-            localStorage.setItem("giabaoreg_accounts", JSON.stringify(accounts));
-        } catch (err) {
-            console.warn("Không tải được từ Supabase, dùng dữ liệu local:", err);
-        }
+function applyShopConfigToUI() {
+  const brandEls = document.querySelectorAll("[data-shop-name]");
+  brandEls.forEach((el) => {
+    el.textContent = shopConfig.shop_name || DEFAULT_CONFIG.shop_name;
+  });
+
+  const zaloBtn = document.getElementById("zaloContactBtn");
+  if (zaloBtn && shopConfig.zalo) {
+    zaloBtn.href = shopConfig.zalo;
+  }
+
+  const fbBtn = document.getElementById("fbContactBtn");
+  if (fbBtn && shopConfig.fb) {
+    fbBtn.href = shopConfig.fb;
+  }
+
+  const cfgNameInput = document.getElementById("cfgShopName");
+  const cfgZaloInput = document.getElementById("cfgZalo");
+  const cfgFbInput = document.getElementById("cfgFb");
+  if (cfgNameInput) cfgNameInput.value = shopConfig.shop_name || "";
+  if (cfgZaloInput) cfgZaloInput.value = shopConfig.zalo || "";
+  if (cfgFbInput) cfgFbInput.value = shopConfig.fb || "";
+}
+
+async function fetchShopConfig() {
+  if (!sbClient) return;
+  try {
+    const { data, error } = await sbClient
+      .from("shop_config")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Lỗi tải shop_config:", error.message);
+      return;
     }
-    updateStats();
+    if (data) {
+      shopConfig = {
+        id: 1,
+        shop_name: data.shop_name || DEFAULT_CONFIG.shop_name,
+        zalo: data.zalo || DEFAULT_CONFIG.zalo,
+        fb: data.fb || DEFAULT_CONFIG.fb
+      };
+      applyShopConfigToUI();
+    }
+  } catch (err) {
+    console.warn("Ngoại lệ khi tải shop_config:", err);
+  }
+}
+
+async function fetchAccounts() {
+  if (!sbClient) {
     renderAccounts();
     renderAdminTable();
-}
+    return;
+  }
 
-async function syncAccountToCloud(acc, isEdit = false) {
-    localStorage.setItem("giabaoreg_accounts", JSON.stringify(accounts));
-    if (!hasSupabase()) return;
-    const payload = {
-        code: acc.code,
-        title: acc.title,
-        price: acc.price,
-        old_price: acc.oldPrice,
-        rank: acc.rank,
-        heroes: acc.heroes,
-        skins: acc.skins,
-        info: acc.info,
-        images: acc.images,
-        description: acc.desc,
-        sold: acc.sold
-    };
-    if (isEdit && acc.id) {
-        await sbRequest(`${SUPABASE_TABLE}?id=eq.${acc.id}`, "PATCH", payload);
-    } else {
-        const created = await sbRequest(`${SUPABASE_TABLE}`, "POST", payload);
-        if (created && created[0]) acc.id = created[0].id;
+  try {
+    const { data, error } = await sbClient
+      .from("accounts")
+      .select("*")
+      .order("id", { ascending: false });
+
+    if (error) {
+      console.error("Lỗi tải accounts:", error.message);
+      showToast("Không tải được danh sách acc từ Supabase: " + error.message, "error");
+      return;
     }
-}
 
-async function deleteAccountFromCloud(acc) {
-    if (hasSupabase() && acc && acc.id) {
-        await sbRequest(`${SUPABASE_TABLE}?id=eq.${acc.id}`, "DELETE");
+    if (Array.isArray(data)) {
+      accountsData = data.map(normalizeAccountRow);
+      renderAccounts();
+      renderAdminTable();
+      updateStats();
     }
-    localStorage.setItem("giabaoreg_accounts", JSON.stringify(accounts));
-}
-
-// ==========================================
-// 2. HIỂN THỊ & BỘ LỌC
-// ==========================================
-function formatMoney(num) {
-    return Number(num || 0).toLocaleString("vi-VN") + "đ";
-}
-
-function applyShopConfig() {
-    document.title = `${shopConfig.shopName} - Giao Dịch Tự Động 24/7`;
-    document.getElementById("nav-shop-name").textContent = shopConfig.shopName;
-    document.getElementById("footer-shop-name").textContent = shopConfig.shopName;
-    const zaloUrl = /^\d+$/.test((shopConfig.zalo || "").trim())
-        ? `https://zalo.me/${shopConfig.zalo.trim()}`
-        : (shopConfig.zalo || "https://zalo.me/");
-    document.getElementById("nav-zalo-btn").href = zaloUrl;
-    document.getElementById("footer-zalo").href = zaloUrl;
-    document.getElementById("footer-fb").href = shopConfig.fb || "https://m.me/";
+  } catch (err) {
+    console.error("Ngoại lệ khi tải accounts:", err);
+  }
 }
 
 function updateStats() {
-    const total = accounts.length;
-    const sold = accounts.filter(a => a.sold).length;
-    const available = total - sold;
-    document.getElementById("stat-total").textContent = total;
-    document.getElementById("stat-available").textContent = available;
-    document.getElementById("stat-sold").textContent = sold;
+  const totalEl = document.getElementById("statTotalAcc");
+  const availableEl = document.getElementById("statAvailableAcc");
+  const soldEl = document.getElementById("statSoldAcc");
+
+  const total = accountsData.length;
+  const sold = accountsData.filter((a) => a.sold).length;
+  const available = total - sold;
+
+  if (totalEl) totalEl.textContent = String(total);
+  if (availableEl) availableEl.textContent = String(available);
+  if (soldEl) soldEl.textContent = String(sold);
+}
+
+function getFilteredAccounts() {
+  let list = [...accountsData];
+
+  if (currentFilter === "available") {
+    list = list.filter((a) => !a.sold);
+  } else if (currentFilter === "sold") {
+    list = list.filter((a) => a.sold);
+  } else if (currentFilter === "under200") {
+    list = list.filter((a) => !a.sold && a.price > 0 && a.price <= 200000);
+  } else if (currentFilter === "highrank") {
+    list = list.filter(
+      (a) => !a.sold && /cao thủ|chiến tướng|thách đấu/i.test(a.rank || "")
+    );
+  }
+
+  if (searchKeyword.trim()) {
+    const q = searchKeyword.trim().toLowerCase();
+    list = list.filter(
+      (a) =>
+        a.code.toLowerCase().includes(q) ||
+        a.title.toLowerCase().includes(q) ||
+        a.rank.toLowerCase().includes(q) ||
+        a.info.toLowerCase().includes(q)
+    );
+  }
+
+  if (currentSort === "price-asc") {
+    list.sort((a, b) => a.price - b.price);
+  } else if (currentSort === "price-desc") {
+    list.sort((a, b) => b.price - a.price);
+  } else if (currentSort === "skins-desc") {
+    list.sort((a, b) => b.skins - a.skins);
+  } else {
+    list.sort((a, b) => b.id - a.id);
+  }
+
+  return list;
 }
 
 function renderAccounts() {
-    const search = (document.getElementById("filter-search").value || "").toLowerCase().trim();
-    const priceFilter = document.getElementById("filter-price").value;
-    const rankFilter = document.getElementById("filter-rank").value;
-    const statusFilter = document.getElementById("filter-status").value;
+  const grid = document.getElementById("accountsGrid");
+  if (!grid) return;
 
-    const filtered = accounts.filter(acc => {
-        const matchText = !search ||
-            (acc.code || "").toLowerCase().includes(search) ||
-            (acc.title || "").toLowerCase().includes(search) ||
-            (acc.desc || "").toLowerCase().includes(search);
+  const list = getFilteredAccounts();
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;text-align:center;padding:42px 16px;color:#94a3b8;">
+        Chưa tìm thấy tài khoản phù hợp với bộ lọc hiện tại.
+      </div>
+    `;
+    return;
+  }
 
-        let matchPrice = true;
-        const p = Number(acc.price) || 0;
-        if (priceFilter === "under100") matchPrice = p < 100000;
-        else if (priceFilter === "100to300") matchPrice = p >= 100000 && p <= 300000;
-        else if (priceFilter === "300to700") matchPrice = p > 300000 && p <= 700000;
-        else if (priceFilter === "above700") matchPrice = p > 700000;
+  grid.innerHTML = list
+    .map((acc) => {
+      const thumb = acc.images[0] || FALLBACK_IMG;
+      const discount =
+        acc.old_price > acc.price && acc.price > 0
+          ? Math.round(((acc.old_price - acc.price) / acc.old_price) * 100)
+          : 0;
 
-        const matchRank = rankFilter === "all" || acc.rank === rankFilter;
-        const matchStatus = statusFilter === "all" ||
-            (statusFilter === "available" && !acc.sold) ||
-            (statusFilter === "sold" && acc.sold);
-
-        return matchText && matchPrice && matchRank && matchStatus;
-    });
-
-    const grid = document.getElementById("accounts-grid");
-    const empty = document.getElementById("empty-state");
-    grid.innerHTML = "";
-
-    if (filtered.length === 0) {
-        empty.classList.remove("d-none");
-        return;
-    }
-    empty.classList.add("d-none");
-
-    filtered.forEach(acc => {
-        const realIndex = accounts.indexOf(acc);
-        const firstImg = (acc.images && acc.images[0])
-            ? acc.images[0]
-            : "https://placehold.co/600x340/131c31/f59e0b?text=Lien+Quan+Mobile";
-        const col = document.createElement("div");
-        col.className = "col-sm-6 col-lg-4";
-        col.innerHTML = `
-            <div class="card gaming-card h-100 rounded-4 overflow-hidden text-white">
-                <div class="position-relative">
-                    <img src="${firstImg}" alt="${acc.title}" class="acc-thumb" onerror="this.src='https://placehold.co/600x340/131c31/f59e0b?text=Anh+Loi'">
-                    <span class="badge ${acc.sold ? 'bg-danger' : 'bg-success'} position-absolute top-0 end-0 m-2">${acc.sold ? 'Đã Bán' : 'Còn Hàng'}</span>
-                    <span class="badge bg-warning text-dark font-gaming position-absolute bottom-0 start-0 m-2">${acc.code}</span>
-                </div>
-                <div class="card-body d-flex flex-column p-3">
-                    <h6 class="fw-bold text-white mb-2 text-truncate">${acc.title}</h6>
-                    <div class="d-flex flex-wrap gap-2 small text-white mb-3">
-                        <span><i class="fa-solid fa-trophy text-warning"></i> ${acc.rank}</span>
-                        <span>•</span>
-                        <span>${acc.heroes} Tướng</span>
-                        <span>•</span>
-                        <span>${acc.skins} Skin</span>
-                    </div>
-                    <div class="mt-auto d-flex align-items-center justify-content-between pt-2 border-top border-secondary">
-                        <div>
-                            <div class="font-gaming fw-bold text-warning fs-5">${formatMoney(acc.price)}</div>
-                            ${acc.oldPrice ? `<small class="text-white text-decoration-line-through">${formatMoney(acc.oldPrice)}</small>` : ""}
-                        </div>
-                        <button onclick="openDetailModal(${realIndex})" class="btn btn-gold btn-sm px-3">Chi Tiết & Mua</button>
-                    </div>
-                </div>
+      return `
+        <article class="acc-card ${acc.sold ? "is-sold" : ""}" data-id="${acc.id}">
+          <div class="acc-thumb-wrap" onclick="openAccountDetail(${acc.id})">
+            <img
+              src="${escapeHtml(thumb)}"
+              alt="${escapeHtml(acc.title)}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
+            />
+            <span class="acc-code">#${escapeHtml(acc.code)}</span>
+            ${discount > 0 && !acc.sold ? `<span class="acc-sale">-${discount}%</span>` : ""}
+            ${acc.sold ? `<span class="acc-sold-badge">ĐÃ BÁN</span>` : ""}
+          </div>
+          <div class="acc-body">
+            <h3 class="acc-title" onclick="openAccountDetail(${acc.id})">${escapeHtml(acc.title)}</h3>
+            <div class="acc-meta">
+              <span>Rank: <b>${escapeHtml(acc.rank)}</b></span>
+              <span>Tướng: <b>${acc.heroes}</b></span>
+              <span>Skin: <b>${acc.skins}</b></span>
             </div>
-        `;
-        grid.appendChild(col);
-    });
+            <div class="acc-info-tag">${escapeHtml(acc.info)}</div>
+            <div class="acc-footer">
+              <div class="acc-prices">
+                <span class="acc-price">${formatVND(acc.price)}</span>
+                ${
+                  acc.old_price > acc.price
+                    ? `<del class="acc-old-price">${formatVND(acc.old_price)}</del>`
+                    : ""
+                }
+              </div>
+              <button type="button" class="btn-detail" onclick="openAccountDetail(${acc.id})">
+                ${acc.sold ? "Xem lại" : "Chi tiết"}
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
-function resetFilters() {
-    document.getElementById("filter-search").value = "";
-    document.getElementById("filter-price").value = "all";
-    document.getElementById("filter-rank").value = "all";
-    document.getElementById("filter-status").value = "all";
-    renderAccounts();
-}
+function openAccountDetail(id) {
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc) return;
 
-// ==========================================
-// 3. CHI TIẾT & ĐẶT MUA
-// ==========================================
-function openDetailModal(index) {
-    const acc = accounts[index];
-    if (!acc) return;
-    selectedAcc = acc;
+  activeDetailAccId = acc.id;
+  detailGalleryIndex = 0;
 
-    document.getElementById("modal-code").textContent = acc.code;
-    document.getElementById("modal-title").textContent = acc.title;
-    document.getElementById("modal-rank").textContent = acc.rank;
-    document.getElementById("modal-heroes").textContent = `${acc.heroes} Tướng`;
-    document.getElementById("modal-skins").textContent = `${acc.skins} Skin`;
-    document.getElementById("modal-info").textContent = acc.info;
-    document.getElementById("modal-desc").textContent = acc.desc || "Không có mô tả thêm.";
-    document.getElementById("modal-price").textContent = formatMoney(acc.price);
-    document.getElementById("modal-old-price").textContent = acc.oldPrice ? formatMoney(acc.oldPrice) : "";
+  const modal = document.getElementById("detailModal");
+  if (!modal) return;
 
-    const gallery = document.getElementById("modal-gallery");
-    gallery.innerHTML = "";
-    const imgs = (acc.images && acc.images.length) ? acc.images : [];
-    if (imgs.length === 0) {
-        gallery.innerHTML = `<p class="small text-white">Chưa có ảnh chụp kho đồ.</p>`;
+  const mainImg = document.getElementById("detailMainImg");
+  const thumbsWrap = document.getElementById("detailThumbs");
+  const titleEl = document.getElementById("detailTitle");
+  const codeEl = document.getElementById("detailCode");
+  const priceEl = document.getElementById("detailPrice");
+  const oldPriceEl = document.getElementById("detailOldPrice");
+  const rankEl = document.getElementById("detailRank");
+  const heroesEl = document.getElementById("detailHeroes");
+  const skinsEl = document.getElementById("detailSkins");
+  const infoEl = document.getElementById("detailInfo");
+  const descEl = document.getElementById("detailDesc");
+  const buyBtn = document.getElementById("detailBuyBtn");
+
+  if (titleEl) titleEl.textContent = acc.title;
+  if (codeEl) codeEl.textContent = "Mã acc: #" + acc.code;
+  if (priceEl) priceEl.textContent = acc.sold ? "ĐÃ BÁN" : formatVND(acc.price);
+  if (oldPriceEl) {
+    oldPriceEl.textContent = acc.old_price > acc.price ? formatVND(acc.old_price) : "";
+  }
+  if (rankEl) rankEl.textContent = acc.rank;
+  if (heroesEl) heroesEl.textContent = String(acc.heroes);
+  if (skinsEl) skinsEl.textContent = String(acc.skins);
+  if (infoEl) infoEl.textContent = acc.info;
+  if (descEl) {
+    descEl.textContent = acc.description || "Liên hệ shop để kiểm tra chi tiết tài khoản.";
+  }
+
+  const updateGallery = () => {
+    const safeUrl = acc.images[detailGalleryIndex] || FALLBACK_IMG;
+    if (mainImg) {
+      mainImg.onerror = () => {
+        mainImg.onerror = null;
+        mainImg.src = FALLBACK_IMG;
+      };
+      mainImg.src = safeUrl;
+    }
+    if (thumbsWrap) {
+      thumbsWrap.innerHTML = acc.images
+        .map(
+          (imgUrl, idx) => `
+          <img
+            src="${escapeHtml(imgUrl)}"
+            alt="Ảnh ${idx + 1}"
+            class="${idx === detailGalleryIndex ? "active" : ""}"
+            style="width:64px;height:44px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ${
+              idx === detailGalleryIndex ? "#38bdf8" : "transparent"
+            };"
+            onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
+            onclick="selectDetailImage(${idx})"
+          />
+        `
+        )
+        .join("");
+    }
+  };
+
+  window.selectDetailImage = (idx) => {
+    detailGalleryIndex = idx;
+    updateGallery();
+  };
+
+  updateGallery();
+
+  if (buyBtn) {
+    if (acc.sold) {
+      buyBtn.textContent = "Tài khoản đã bán";
+      buyBtn.disabled = true;
+      buyBtn.onclick = null;
     } else {
-        imgs.forEach(url => {
-            const div = document.createElement("div");
-            div.className = "col-md-6";
-            div.innerHTML = `<img src="${url}" class="gallery-img border border-secondary" onclick="zoomImage('${url}')">`;
-            gallery.appendChild(div);
-        });
+      buyBtn.textContent = `Mua ngay acc #${acc.code}`;
+      buyBtn.disabled = false;
+      buyBtn.onclick = () => {
+        const contactTarget = shopConfig.zalo || shopConfig.fb || "https://zalo.me/";
+        showToast(`Đang mở liên hệ mua acc #${acc.code}...`, "info");
+        window.open(contactTarget, "_blank", "noopener,noreferrer");
+      };
     }
+  }
 
-    new bootstrap.Modal(document.getElementById("detailModal")).show();
+  modal.classList.add("open");
+  modal.style.display = "flex";
 }
 
-function zoomImage(url) {
-    document.getElementById("lightbox-img").src = url;
-    new bootstrap.Modal(document.getElementById("lightboxModal")).show();
+function closeDetailModal() {
+  const modal = document.getElementById("detailModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.style.display = "none";
+  activeDetailAccId = null;
 }
 
-function copyOrderAndOpen(channel) {
-    if (!selectedAcc) return;
-    const msg = `Chào shop ${shopConfig.shopName}, mình muốn mua acc mã ${selectedAcc.code} (${selectedAcc.title}) giá ${formatMoney(selectedAcc.price)}.`;
-    navigator.clipboard?.writeText(msg).catch(() => {});
-    const targetUrl = channel === "zalo" ? document.getElementById("nav-zalo-btn").href : shopConfig.fb;
-    window.open(targetUrl, "_blank");
+/* =========================================================
+   ADMIN AUTHENTICATION & MANAGEMENT (SUPABASE RLS)
+   ========================================================= */
+
+function syncAuthUI() {
+  const loginBox = document.getElementById("adminLoginBox");
+  const panelBox = document.getElementById("adminPanelBox");
+  const userBadge = document.getElementById("adminUserEmail");
+
+  if (currentUser) {
+    if (loginBox) loginBox.style.display = "none";
+    if (panelBox) panelBox.style.display = "block";
+    if (userBadge) userBadge.textContent = currentUser.email || "Admin";
+  } else {
+    if (loginBox) loginBox.style.display = "block";
+    if (panelBox) panelBox.style.display = "none";
+    if (userBadge) userBadge.textContent = "";
+  }
 }
 
-// ==========================================
-// 4. QUẢN LÝ SHOP (ADMIN)
-// ==========================================
-function openAdminModal() {
-    document.getElementById("admin-pass-input").value = "";
-    document.getElementById("admin-login-view").classList.remove("d-none");
-    document.getElementById("admin-dashboard-view").classList.add("d-none");
-    new bootstrap.Modal(document.getElementById("adminModal")).show();
+async function openAdminModal() {
+  const modal = document.getElementById("adminModal");
+  if (!modal) return;
+
+  if (sbClient) {
+    const { data } = await sbClient.auth.getSession();
+    currentUser = data?.session?.user || null;
+  }
+  syncAuthUI();
+  renderAdminTable();
+  applyShopConfigToUI();
+
+  modal.classList.add("open");
+  modal.style.display = "flex";
 }
 
-function checkAdminLogin() {
-    const pass = document.getElementById("admin-pass-input").value;
-    if (pass === shopConfig.adminPass) {
-        document.getElementById("admin-login-view").classList.add("d-none");
-        document.getElementById("admin-dashboard-view").classList.remove("d-none");
-        document.getElementById("cfg-shop-name").value = shopConfig.shopName;
-        document.getElementById("cfg-zalo").value = shopConfig.zalo;
-        document.getElementById("cfg-fb").value = shopConfig.fb;
-        document.getElementById("cfg-pass").value = shopConfig.adminPass;
-        renderAdminTable();
-    } else {
-        alert("Sai mật khẩu!");
-    }
+function closeAdminModal() {
+  const modal = document.getElementById("adminModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.style.display = "none";
 }
 
-function switchAdminTab(tab) {
-    const isManage = tab === "manage";
-    document.getElementById("admin-tab-manage").classList.toggle("d-none", !isManage);
-    document.getElementById("admin-tab-settings").classList.toggle("d-none", isManage);
-    document.getElementById("tab-btn-manage").classList.toggle("active", isManage);
-    document.getElementById("tab-btn-settings").classList.toggle("active", !isManage);
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  if (!sbClient) {
+    showToast("Chưa khởi tạo được Supabase Client.", "error");
+    return;
+  }
+
+  const emailInput = document.getElementById("adminEmail");
+  const passInput = document.getElementById("adminPassword");
+  const email = (emailInput?.value || "").trim();
+  const password = passInput?.value || "";
+
+  if (!email || !password) {
+    showToast("Vui lòng nhập đầy đủ Email và Mật khẩu.", "warning");
+    return;
+  }
+
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    showToast("Đăng nhập thất bại: " + error.message, "error");
+    return;
+  }
+
+  currentUser = data?.user || null;
+  if (passInput) passInput.value = "";
+  syncAuthUI();
+  await fetchAccounts();
+  await fetchShopConfig();
+  showToast("Đăng nhập quản trị thành công!", "success");
 }
 
-async function saveAccountFromForm() {
-    const idx = Number(document.getElementById("edit-acc-index").value);
-    const code = document.getElementById("inp-code").value.trim();
-    const title = document.getElementById("inp-title").value.trim();
-    const price = Number(document.getElementById("inp-price").value);
-
-    if (!code || !title || !price) {
-        alert("Vui lòng nhập đầy đủ Mã Acc, Tiêu Đề và Giá Bán!");
-        return;
-    }
-
-    const oldPrice = Number(document.getElementById("inp-old-price").value) || 0;
-    const rank = document.getElementById("inp-rank").value;
-    const heroes = Number(document.getElementById("inp-heroes").value) || 0;
-    const skins = Number(document.getElementById("inp-skins").value) || 0;
-    const info = document.getElementById("inp-info").value.trim() || "Trắng thông tin";
-    const images = document.getElementById("inp-images").value
-        .split("\n")
-        .map(s => s.trim())
-        .filter(Boolean);
-    const desc = document.getElementById("inp-desc").value.trim();
-
-    if (idx >= 0 && accounts[idx]) {
-        accounts[idx] = { ...accounts[idx], code, title, price, oldPrice, rank, heroes, skins, info, images, desc };
-        await syncAccountToCloud(accounts[idx], true);
-    } else {
-        const newAcc = { code, title, price, oldPrice, rank, heroes, skins, info, images, desc, sold: false };
-        accounts.unshift(newAcc);
-        await syncAccountToCloud(newAcc, false);
-    }
-
-    resetAccountForm();
-    updateStats();
-    renderAccounts();
-    renderAdminTable();
-}
-
-function editAccount(idx) {
-    const acc = accounts[idx];
-    if (!acc) return;
-    document.getElementById("edit-acc-index").value = idx;
-    document.getElementById("form-acc-heading").textContent = `✏️ Chỉnh Sửa Tài Khoản ${acc.code}`;
-    document.getElementById("inp-code").value = acc.code;
-    document.getElementById("inp-title").value = acc.title;
-    document.getElementById("inp-price").value = acc.price;
-    document.getElementById("inp-old-price").value = acc.oldPrice || "";
-    document.getElementById("inp-rank").value = acc.rank;
-    document.getElementById("inp-heroes").value = acc.heroes;
-    document.getElementById("inp-skins").value = acc.skins;
-    document.getElementById("inp-info").value = acc.info;
-    document.getElementById("inp-images").value = (acc.images || []).join("\n");
-    document.getElementById("inp-desc").value = acc.desc || "";
-    document.getElementById("btn-cancel-edit").classList.remove("d-none");
+async function handleAdminLogout() {
+  if (sbClient) {
+    await sbClient.auth.signOut();
+  }
+  currentUser = null;
+  resetAccountForm();
+  syncAuthUI();
+  showToast("Đã đăng xuất khỏi phiên quản trị.", "info");
 }
 
 function resetAccountForm() {
-    document.getElementById("edit-acc-index").value = "-1";
-    document.getElementById("form-acc-heading").textContent = "➕ Đăng Tài Khoản Mới Lên Shop";
-    ["inp-code", "inp-title", "inp-price", "inp-old-price", "inp-heroes", "inp-skins", "inp-images", "inp-desc"].forEach(id => {
-        document.getElementById(id).value = "";
-    });
-    document.getElementById("inp-info").value = "Trắng thông tin";
-    document.getElementById("btn-cancel-edit").classList.add("d-none");
+  editingAccId = null;
+  const form = document.getElementById("accountForm");
+  if (form) form.reset();
+
+  const submitBtn = document.getElementById("saveAccountBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  if (submitBtn) submitBtn.textContent = "Thêm tài khoản mới";
+  if (cancelEditBtn) cancelEditBtn.style.display = "none";
 }
 
-async function toggleSold(idx) {
-    const acc = accounts[idx];
-    if (!acc) return;
-    acc.sold = !acc.sold;
-    await syncAccountToCloud(acc, true);
-    updateStats();
-    renderAccounts();
-    renderAdminTable();
+function startEditAccount(id) {
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc) return;
+
+  editingAccId = acc.id;
+
+  const setVal = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.value = val;
+  };
+
+  setVal("accCode", acc.code);
+  setVal("accTitle", acc.title);
+  setVal("accPrice", acc.price);
+  setVal("accOldPrice", acc.old_price);
+  setVal("accRank", acc.rank);
+  setVal("accHeroes", acc.heroes);
+  setVal("accSkins", acc.skins);
+  setVal("accInfo", acc.info);
+  setVal("accImages", acc.images.join("\n"));
+  setVal("accDesc", acc.description);
+
+  const soldCheckbox = document.getElementById("accSold");
+  if (soldCheckbox) soldCheckbox.checked = Boolean(acc.sold);
+
+  const submitBtn = document.getElementById("saveAccountBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  if (submitBtn) submitBtn.textContent = `Lưu cập nhật #${acc.code}`;
+  if (cancelEditBtn) cancelEditBtn.style.display = "inline-block";
 }
 
-async function deleteAccount(idx) {
-    const acc = accounts[idx];
-    if (!acc || !confirm(`Xóa acc ${acc.code}?`)) return;
-    accounts.splice(idx, 1);
-    await deleteAccountFromCloud(acc);
-    updateStats();
-    renderAccounts();
-    renderAdminTable();
+async function handleSaveAccount(e) {
+  e.preventDefault();
+  if (!currentUser) {
+    showToast("Bạn cần đăng nhập Admin trước khi thao tác dữ liệu.", "warning");
+    return;
+  }
+  if (!sbClient) {
+    showToast("Chưa kết nối Supabase.", "error");
+    return;
+  }
+
+  const getVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
+
+  const code = getVal("accCode");
+  const title = getVal("accTitle");
+  if (!code || !title) {
+    showToast("Mã acc và tiêu đề không được để trống.", "warning");
+    return;
+  }
+
+  const payload = {
+    code,
+    title,
+    price: getNum("accPrice"),
+    old_price: getNum("accOldPrice"),
+    rank: getVal("accRank") || "Không Rank",
+    heroes: getNum("accHeroes"),
+    skins: getNum("accSkins"),
+    info: getVal("accInfo") || "Trắng thông tin",
+    images: normalizeImages(getVal("accImages")),
+    description: getVal("accDesc"),
+    sold: Boolean(document.getElementById("accSold")?.checked)
+  };
+
+  if (editingAccId !== null) {
+    const { error } = await sbClient
+      .from("accounts")
+      .update(payload)
+      .eq("id", editingAccId);
+
+    if (error) {
+      showToast("Cập nhật acc lỗi: " + error.message, "error");
+      return;
+    }
+    showToast(`Đã cập nhật tài khoản #${code}.`, "success");
+  } else {
+    const { error } = await sbClient.from("accounts").insert([payload]);
+    if (error) {
+      showToast("Thêm acc lỗi: " + error.message, "error");
+      return;
+    }
+    showToast(`Đã thêm tài khoản #${code} lên Supabase!`, "success");
+  }
+
+  resetAccountForm();
+  await fetchAccounts();
+}
+
+async function toggleSoldStatus(id) {
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin để đổi trạng thái.", "warning");
+    return;
+  }
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc) return;
+
+  const { error } = await sbClient
+    .from("accounts")
+    .update({ sold: !acc.sold })
+    .eq("id", acc.id);
+
+  if (error) {
+    showToast("Đổi trạng thái lỗi: " + error.message, "error");
+    return;
+  }
+
+  showToast(!acc.sold ? `Đã đánh dấu #${acc.code} là ĐÃ BÁN.` : `Đã mở bán lại #${acc.code}.`, "success");
+  await fetchAccounts();
+}
+
+async function deleteAccount(id) {
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin để xóa tài khoản.", "warning");
+    return;
+  }
+  const acc = accountsData.find((item) => item.id === Number(id));
+  const label = acc ? `#${acc.code}` : `ID ${id}`;
+  if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn tài khoản ${label}?`)) return;
+
+  const { error } = await sbClient.from("accounts").delete().eq("id", Number(id));
+  if (error) {
+    showToast("Xóa acc lỗi: " + error.message, "error");
+    return;
+  }
+
+  if (editingAccId === Number(id)) {
+    resetAccountForm();
+  }
+  showToast(`Đã xóa ${label}.`, "success");
+  await fetchAccounts();
+}
+
+async function handleSaveConfig(e) {
+  e.preventDefault();
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin để lưu cấu hình shop.", "warning");
+    return;
+  }
+
+  const nextConfig = {
+    id: 1,
+    shop_name: (document.getElementById("cfgShopName")?.value || "").trim() || DEFAULT_CONFIG.shop_name,
+    zalo: (document.getElementById("cfgZalo")?.value || "").trim() || DEFAULT_CONFIG.zalo,
+    fb: (document.getElementById("cfgFb")?.value || "").trim() || DEFAULT_CONFIG.fb
+  };
+
+  const { error } = await sbClient
+    .from("shop_config")
+    .upsert(nextConfig, { onConflict: "id" });
+
+  if (error) {
+    showToast("Lưu cấu hình lỗi: " + error.message, "error");
+    return;
+  }
+
+  shopConfig = nextConfig;
+  applyShopConfigToUI();
+  showToast("Đã lưu cấu hình shop lên Supabase!", "success");
 }
 
 function renderAdminTable() {
-    const tbody = document.getElementById("admin-acc-list");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-    accounts.forEach((acc, idx) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td class="p-3 fw-bold text-warning">${acc.code}</td>
-            <td class="p-3">${acc.title}</td>
-            <td class="p-3">${formatMoney(acc.price)}</td>
-            <td class="p-3"><span class="badge ${acc.sold ? 'bg-danger' : 'bg-success'}">${acc.sold ? 'Đã Bán' : 'Còn Hàng'}</span></td>
-            <td class="p-3 text-end">
-                <button onclick="toggleSold(${idx})" class="btn btn-outline-info btn-sm me-1">${acc.sold ? 'Mở Bán' : 'Báo Đã Bán'}</button>
-                <button onclick="editAccount(${idx})" class="btn btn-outline-warning btn-sm me-1">Sửa</button>
-                <button onclick="deleteAccount(${idx})" class="btn btn-outline-danger btn-sm">Xóa</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
+  const tbody = document.getElementById("adminAccountsBody");
+  if (!tbody) return;
+
+  if (accountsData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:18px;">Chưa có tài khoản nào.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = accountsData
+    .map(
+      (acc) => `
+      <tr>
+        <td><b>#${escapeHtml(acc.code)}</b></td>
+        <td>${escapeHtml(acc.title)}</td>
+        <td>${formatVND(acc.price)}</td>
+        <td>${acc.sold ? '<span style="color:#f87171;">Đã bán</span>' : '<span style="color:#4ade80;">Còn hàng</span>'}</td>
+        <td style="white-space:nowrap;">
+          <button type="button" onclick="toggleSoldStatus(${acc.id})">${acc.sold ? "Mở bán" : "Báo đã bán"}</button>
+          <button type="button" onclick="startEditAccount(${acc.id})">Sửa</button>
+          <button type="button" onclick="deleteAccount(${acc.id})">Xóa</button>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+function subscribeRealtime() {
+  if (!sbClient || typeof sbClient.channel !== "function") return;
+  try {
+    sbClient
+      .channel("shop-realtime-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "accounts" },
+        () => {
+          fetchAccounts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shop_config" },
+        () => {
+          fetchShopConfig();
+        }
+      )
+      .subscribe();
+  } catch (err) {
+    console.warn("Không thể bật Realtime:", err);
+  }
+}
+
+function bindEvents() {
+  document.querySelectorAll("[data-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-filter]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.getAttribute("data-filter") || "all";
+      renderAccounts();
     });
+  });
+
+  const sortSelect = document.getElementById("sortSelect");
+  if (sortSelect) {
+    sortSelect.addEventListener("change", (e) => {
+      currentSort = e.target.value || "default";
+      renderAccounts();
+    });
+  }
+
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      searchKeyword = e.target.value || "";
+      renderAccounts();
+    });
+  }
+
+  const openAdminBtn = document.getElementById("openAdminBtn");
+  if (openAdminBtn) openAdminBtn.addEventListener("click", openAdminModal);
+
+  const closeAdminBtn = document.getElementById("closeAdminBtn");
+  if (closeAdminBtn) closeAdminBtn.addEventListener("click", closeAdminModal);
+
+  const closeDetailBtn = document.getElementById("closeDetailBtn");
+  if (closeDetailBtn) closeDetailBtn.addEventListener("click", closeDetailModal);
+
+  const loginForm = document.getElementById("adminLoginForm");
+  if (loginForm) loginForm.addEventListener("submit", handleAdminLogin);
+
+  const logoutBtn = document.getElementById("adminLogoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", handleAdminLogout);
+
+  const accForm = document.getElementById("accountForm");
+  if (accForm) accForm.addEventListener("submit", handleSaveAccount);
+
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  if (cancelEditBtn) cancelEditBtn.addEventListener("click", resetAccountForm);
+
+  const cfgForm = document.getElementById("configForm");
+  if (cfgForm) cfgForm.addEventListener("submit", handleSaveConfig);
+
+  window.addEventListener("click", (e) => {
+    const adminModal = document.getElementById("adminModal");
+    const detailModal = document.getElementById("detailModal");
+    if (e.target === adminModal) closeAdminModal();
+    if (e.target === detailModal) closeDetailModal();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeAdminModal();
+      closeDetailModal();
+    }
+  });
 }
 
-async function saveShopSettings() {
-    shopConfig.shopName = document.getElementById("cfg-shop-name").value.trim() || DEFAULT_CONFIG.shopName;
-    shopConfig.zalo = document.getElementById("cfg-zalo").value.trim() || DEFAULT_CONFIG.zalo;
-    shopConfig.fb = document.getElementById("cfg-fb").value.trim() || DEFAULT_CONFIG.fb;
-    shopConfig.adminPass = document.getElementById("cfg-pass").value.trim() || DEFAULT_CONFIG.adminPass;
-    await syncConfigToCloud();
-    applyShopConfig();
-    alert("Đã lưu cài đặt shop!");
+async function initApp() {
+  startOnlineCounter();
+  applyShopConfigToUI();
+  renderAccounts();
+  updateStats();
+  bindEvents();
+
+  sbClient = createSupabaseInstance();
+  if (!sbClient) {
+    showToast("Đang chạy chế độ xem thử (kiểm tra lại thư viện Supabase).", "warning");
+    return;
+  }
+
+  const { data } = await sbClient.auth.getSession();
+  currentUser = data?.session?.user || null;
+  syncAuthUI();
+
+  sbClient.auth.onAuthStateChange((_event, session) => {
+    currentUser = session?.user || null;
+    syncAuthUI();
+  });
+
+  await Promise.all([fetchShopConfig(), fetchAccounts()]);
+  subscribeRealtime();
 }
 
-// ==========================================
-// 5. BỘ ĐẾM ONLINE TỰ NHIÊN (5 - 10 NGƯỜI)
-// ==========================================
-setInterval(() => {
-    const el = document.getElementById("online-count");
-    if (!el) return;
-    const current = Number(el.textContent) || 7;
-    const next = Math.max(5, Math.min(10, current + (Math.random() > 0.5 ? 1 : -1)));
-    el.textContent = next;
-}, 5000);
-
-loadConfigFromCloud();
-loadAccountsFromCloud();
+document.addEventListener("DOMContentLoaded", initApp);
