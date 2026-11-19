@@ -52,7 +52,7 @@ let searchKeyword = "";
 let detailGalleryIndex = 0;
 let activeDetailAccId = null;
 let editingAccId = null;
-let onlineCount = 42;
+let onlineCount = 7;
 
 function createSupabaseInstance() {
   const globalLib = window.supabase;
@@ -173,16 +173,17 @@ function normalizeAccountRow(row) {
 
 function startOnlineCounter() {
   const el = document.getElementById("onlineCount");
+  onlineCount = Math.floor(Math.random() * 6) + 5; // 5 đến 10 người
   const updateText = () => {
     if (el) el.textContent = String(onlineCount);
   };
   updateText();
 
   setInterval(() => {
-    const delta = Math.floor(Math.random() * 5) - 2;
-    onlineCount = Math.max(24, Math.min(98, onlineCount + delta));
+    const delta = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+    onlineCount = Math.max(5, Math.min(10, onlineCount + delta));
     updateText();
-  }, 4500);
+  }, 5000);
 }
 
 function applyShopConfigToUI() {
@@ -302,8 +303,14 @@ function getFilteredAccounts() {
     list = list.filter((a) => !a.sold);
   } else if (currentFilter === "sold") {
     list = list.filter((a) => a.sold);
-  } else if (currentFilter === "under200") {
-    list = list.filter((a) => !a.sold && a.price > 0 && a.price <= 200000);
+  } else if (currentFilter === "under100") {
+    list = list.filter((a) => !a.sold && a.price > 0 && a.price < 100000);
+  } else if (currentFilter === "100to300") {
+    list = list.filter((a) => !a.sold && a.price >= 100000 && a.price <= 300000);
+  } else if (currentFilter === "over300") {
+    list = list.filter((a) => !a.sold && a.price > 300000);
+  } else if (currentFilter === "manySkins") {
+    list = list.filter((a) => !a.sold && a.skins >= 100);
   } else if (currentFilter === "highrank") {
     list = list.filter(
       (a) => !a.sold && /cao thủ|chiến tướng|thách đấu/i.test(a.rank || "")
