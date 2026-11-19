@@ -13,16 +13,18 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="text-light">
 
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary sticky-top py-3">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="#" onclick="window.scrollTo({top:0, behavior:'smooth'})">
-                <div class="bg-warning text-dark p-2 rounded fw-bold fs-5 shadow"><i class="fa-solid fa-crown"></i></div>
+                <div class="bg-warning text-dark p-2 rounded fw-bold fs-5 shadow d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
                 <div>
                     <span id="nav-shop-name" class="font-gaming fw-bold fs-4 text-warning">Giabaoreg.com</span>
-                    <p class="small text-light opacity-75 mb-0" style="font-size: 11px;">Uy Tín • Chất Lượng • Giá Rẻ</p>
+                    <p class="small text-white mb-0" style="font-size: 11px;">Uy Tín • Chất Lượng • Giá Rẻ</p>
                 </div>
             </a>
             <div class="d-flex align-items-center gap-2">
@@ -42,26 +44,26 @@
             <!-- ONLINE COUNTER BADGE -->
             <div class="d-inline-flex align-items-center gap-2 bg-dark border border-secondary px-3 py-1.5 rounded-pill mb-3 shadow rgb-border">
                 <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
-                <span class="small text-light">Đang Online: <strong id="online-count" class="text-warning font-gaming">7</strong> người</span>
+                <span class="small text-white">Đang Online: <strong id="online-count" class="text-warning font-gaming">7</strong> người</span>
             </div>
 
             <h1 class="font-gaming fw-bold display-6 display-md-4 mb-3 text-white">KHO TÀI KHOẢN <span class="text-warning">LIÊN QUÂN MOBILE</span></h1>
-            <p class="text-light opacity-85 mx-auto mb-4 fs-6" style="max-width: 700px;">
+            <p class="text-white mx-auto mb-4 fs-6" style="max-width: 700px;">
                 Cam kết chuẩn thông tin mô tả 100% • Bảo hành tranh chấp trọn đời • Giao dịch nhanh gọn qua Zalo / Messenger.
             </p>
 
             <div class="row g-2 justify-content-center mx-auto bg-dark border border-secondary p-3 rounded-4 shadow-lg rgb-border mb-4" style="max-width: 480px;">
                 <div class="col-4 border-end border-secondary">
                     <div id="stat-total" class="font-gaming fs-4 fw-bold text-white">0</div>
-                    <div class="small text-light opacity-75">Tổng Số Acc</div>
+                    <div class="small text-white">Tổng Số Acc</div>
                 </div>
                 <div class="col-4 border-end border-secondary">
                     <div id="stat-available" class="font-gaming fs-4 fw-bold text-success">0</div>
-                    <div class="small text-light opacity-75">Còn Hàng</div>
+                    <div class="small text-white">Còn Hàng</div>
                 </div>
                 <div class="col-4">
                     <div id="stat-sold" class="font-gaming fs-4 fw-bold text-warning">0</div>
-                    <div class="small text-light opacity-75">Đã Bán</div>
+                    <div class="small text-white">Đã Bán</div>
                 </div>
             </div>
 
@@ -70,7 +72,7 @@
                 <h5 class="text-warning font-gaming mb-3 fs-6 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation"></i> ĐIỀU KHOẢN & LƯU Ý QUAN TRỌNG KHI MUA HÀNG
                 </h5>
-                <div class="row g-3 small text-light opacity-85">
+                <div class="row g-3 small text-white">
                     <div class="col-md-6">
                         <div class="p-3 bg-black border border-secondary rounded-3 h-100">
                             <strong class="text-warning d-block mb-1">1. Cam kết tài khoản:</strong>
@@ -153,7 +155,7 @@
         <div id="empty-state" class="d-none text-center py-5 bg-dark border border-secondary rounded-4">
             <i class="fa-solid fa-box-open fa-3x text-warning mb-3"></i>
             <h5 class="text-white">Không tìm thấy tài khoản phù hợp</h5>
-            <p class="text-light opacity-75 small">Hãy thử tìm kiếm với từ khóa khác nhé!</p>
+            <p class="text-white small">Hãy thử tìm kiếm với từ khóa khác nhé!</p>
             <button onclick="resetFilters()" class="btn btn-warning btn-sm fw-bold">Đặt Lại Bộ Lọc</button>
         </div>
 
@@ -161,7 +163,7 @@
         <section class="mt-5 pt-4 border-top border-secondary">
             <div class="text-center mb-4">
                 <h3 class="font-gaming text-white"><i class="fa-solid fa-star text-warning me-2"></i> ĐÁNH GIÁ TỪ <span class="text-warning">KHÁCH HÀNG</span></h3>
-                <p class="text-light opacity-75 small">Phản hồi thực tế từ những anh em đã giao dịch thành công tại shop</p>
+                <p class="text-white small">Phản hồi thực tế từ những anh em đã giao dịch thành công tại shop</p>
             </div>
             <div class="row g-4">
                 <div class="col-md-4">
@@ -169,11 +171,11 @@
                         <div class="d-flex align-items-center gap-2 mb-2 text-warning">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                         </div>
-                        <p class="small text-light opacity-85 mb-3">"Shop uy tín vãi anh em ơi, mua acc Nakroth xong đổi pass cái một, nhân viên hỗ trợ nhiệt tình đúng 3 phút là xong việc."</p>
+                        <p class="small text-white mb-3">"Shop uy tín vãi anh em ơi, mua acc Nakroth xong đổi pass cái một, nhân viên hỗ trợ nhiệt tình đúng 3 phút là xong việc."</p>
                         <div class="d-flex align-items-center gap-2 mt-auto">
                             <div class="bg-warning text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">H</div>
                             <div>
-                                <h6 class="mb-0 small fw-bold">Huy</h6>
+                                <h6 class="mb-0 small fw-bold text-white">Huy</h6>
                                 <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua #LQ01</span>
                             </div>
                         </div>
@@ -184,11 +186,11 @@
                         <div class="d-flex align-items-center gap-2 mb-2 text-warning">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                         </div>
-                        <p class="small text-light opacity-85 mb-3">"Acc trắng thông tin chuẩn 100% như mô tả. Giá học sinh mà nhiều skin ngon quá, sẽ ủng hộ shop dài dài!"</p>
+                        <p class="small text-white mb-3">"Acc trắng thông tin chuẩn 100% như mô tả. Giá học sinh mà nhiều skin ngon quá, sẽ ủng hộ shop dài dài!"</p>
                         <div class="d-flex align-items-center gap-2 mt-auto">
                             <div class="bg-info text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">T</div>
                             <div>
-                                <h6 class="mb-0 small fw-bold">Tuấn</h6>
+                                <h6 class="mb-0 small fw-bold text-white">Tuấn</h6>
                                 <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua #LQ02</span>
                             </div>
                         </div>
@@ -199,11 +201,11 @@
                         <div class="d-flex align-items-center gap-2 mb-2 text-warning">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                         </div>
-                        <p class="small text-light opacity-85 mb-3">"Giao dịch nhanh gọn qua Zalo, chủ shop rep tin nhắn cực nhanh và hướng dẫn bảo mật rất kỹ. 10 điểm uy tín!"</p>
+                        <p class="small text-white mb-3">"Giao dịch nhanh gọn qua Zalo, chủ shop rep tin nhắn cực nhanh và hướng dẫn bảo mật rất kỹ. 10 điểm uy tín!"</p>
                         <div class="d-flex align-items-center gap-2 mt-auto">
                             <div class="bg-danger text-white fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">N</div>
                             <div>
-                                <h6 class="mb-0 small fw-bold">Nam</h6>
+                                <h6 class="mb-0 small fw-bold text-white">Nam</h6>
                                 <span class="text-success" style="font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Đã mua Acc VIP</span>
                             </div>
                         </div>
@@ -219,7 +221,7 @@
         <div class="container d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
             <div>
                 <p id="footer-shop-name" class="font-gaming fw-bold text-warning mb-1 fs-5">Giabaoreg.com</p>
-                <p class="small text-light opacity-75 mb-0 fw-bold">CSKH • GDTG • HỖ TRỢ 24/7</p>
+                <p class="small text-white mb-0 fw-bold">CSKH • GDTG • HỖ TRỢ 24/7</p>
             </div>
             <div class="d-flex gap-2">
                 <a id="footer-zalo" href="#" target="_blank" class="btn btn-info btn-sm fw-bold"><i class="fa-solid fa-phone me-1"></i> Zalo Chủ Shop</a>
@@ -243,25 +245,25 @@
                     <div class="row g-2 mb-4 text-center">
                         <div class="col-3">
                             <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-light opacity-75" style="font-size: 11px;">Mức Rank</div>
+                                <div class="small text-white" style="font-size: 11px;">Mức Rank</div>
                                 <div id="modal-rank" class="fw-bold text-warning small">Cao Thủ</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-light opacity-75" style="font-size: 11px;">Số Tướng</div>
+                                <div class="small text-white" style="font-size: 11px;">Số Tướng</div>
                                 <div id="modal-heroes" class="fw-bold text-white small">115 Tướng</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-light opacity-75" style="font-size: 11px;">Trang Phục</div>
+                                <div class="small text-white" style="font-size: 11px;">Trang Phục</div>
                                 <div id="modal-skins" class="fw-bold text-info small">240 Skin</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="bg-black border border-secondary p-2 rounded-3">
-                                <div class="small text-light opacity-75" style="font-size: 11px;">Thông Tin</div>
+                                <div class="small text-white" style="font-size: 11px;">Thông Tin</div>
                                 <div id="modal-info" class="fw-bold text-success small">Trắng TT</div>
                             </div>
                         </div>
@@ -269,15 +271,15 @@
 
                     <div class="bg-black border border-secondary p-3 rounded-3 mb-4">
                         <h6 class="text-warning small fw-bold text-uppercase mb-2"><i class="fa-solid fa-list-check me-1"></i> Chi Tiết Skin VIP & Ghi Chú</h6>
-                        <p id="modal-desc" class="small text-light mb-0" style="white-space: pre-line; line-height: 1.6;"></p>
+                        <p id="modal-desc" class="small text-white mb-0" style="white-space: pre-line; line-height: 1.6;"></p>
                     </div>
 
                     <div class="bg-gradient border border-warning border-opacity-50 p-3 rounded-3 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 mb-4">
                         <div>
-                            <div class="small text-light opacity-75">Giá Bán Công Khai:</div>
+                            <div class="small text-white">Giá Bán Công Khai:</div>
                             <div class="d-flex align-items-baseline gap-2">
                                 <span id="modal-price" class="font-gaming fs-3 fw-bold text-warning">350.000đ</span>
-                                <span id="modal-old-price" class="small text-light opacity-75 text-decoration-line-through">500.000đ</span>
+                                <span id="modal-old-price" class="small text-white text-decoration-line-through">500.000đ</span>
                             </div>
                         </div>
                         <div id="modal-buy-actions" class="d-flex gap-2 w-100 w-sm-auto">
@@ -324,8 +326,8 @@
                 <div id="admin-dashboard-view" class="d-none modal-body p-4">
                     <div class="bg-success bg-opacity-15 border border-success border-opacity-50 p-3 rounded-3 d-flex align-items-center justify-content-between gap-3 mb-4">
                         <div>
-                            <h6 class="text-success fw-bold mb-1"><i class="fa-solid fa-circle-check me-1"></i> Tự Động Lưu Trữ Thông Minh</h6>
-                            <p class="small text-light opacity-85 mb-0">Mọi thay đổi (Đổi mật khẩu, thêm/sửa acc, đổi tên shop) đã được tự động lưu trực tiếp trên trình duyệt và đồng bộ khi cấu hình Database!</p>
+                            <h6 class="text-success fw-bold mb-1"><i class="fa-solid fa-circle-check me-1"></i> Tự Động Lưu Trữ & Đồng Bộ</h6>
+                            <p class="small text-white mb-0">Khi đã cấu hình Database Supabase, mọi acc và cài đặt shop sẽ đồng bộ trên mọi thiết bị và đường link.</p>
                         </div>
                     </div>
 
@@ -334,7 +336,7 @@
                             <button onclick="switchAdminTab('manage')" id="tab-btn-manage" class="nav-link active bg-transparent text-warning border-secondary fw-bold">📦 Quản Lý Tài Khoản</button>
                         </li>
                         <li class="nav-item">
-                            <button onclick="switchAdminTab('settings')" id="tab-btn-settings" class="nav-link bg-transparent text-light border-0 fw-bold">⚙️ Cài Đặt Shop & Liên Hệ</button>
+                            <button onclick="switchAdminTab('settings')" id="tab-btn-settings" class="nav-link bg-transparent text-white border-0 fw-bold">⚙️ Cài Đặt Shop & Liên Hệ</button>
                         </li>
                     </ul>
 
@@ -345,23 +347,23 @@
                             <input type="hidden" id="edit-acc-index" value="-1">
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label class="small text-light opacity-75 mb-1">Mã Acc *</label>
+                                    <label class="small text-white mb-1">Mã Acc *</label>
                                     <input type="text" id="inp-code" placeholder="VD: #LQ03" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-9">
-                                    <label class="small text-light opacity-75 mb-1">Tiêu Đề Nổi Bật *</label>
+                                    <label class="small text-white mb-1">Tiêu Đề Nổi Bật *</label>
                                     <input type="text" id="inp-title" placeholder="VD: Acc Nakroth Vệ Thần..." class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="small text-light opacity-75 mb-1">Giá Bán (VNĐ) *</label>
+                                    <label class="small text-white mb-1">Giá Bán (VNĐ) *</label>
                                     <input type="number" id="inp-price" placeholder="350000" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="small text-light opacity-75 mb-1">Giá Gốc Gạch Ngang</label>
+                                    <label class="small text-white mb-1">Giá Gốc Gạch Ngang</label>
                                     <input type="number" id="inp-old-price" placeholder="500000" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="small text-light opacity-75 mb-1">Rank</label>
+                                    <label class="small text-white mb-1">Rank</label>
                                     <select id="inp-rank" class="form-select form-select-sm">
                                         <option value="Không Rank">Không Rank</option>
                                         <option value="Đồng">Đồng</option>
@@ -376,23 +378,23 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="small text-light opacity-75 mb-1">Số Tướng</label>
+                                    <label class="small text-white mb-1">Số Tướng</label>
                                     <input type="number" id="inp-heroes" placeholder="115" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="small text-light opacity-75 mb-1">Số Skin</label>
+                                    <label class="small text-white mb-1">Số Skin</label>
                                     <input type="number" id="inp-skins" placeholder="200" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="small text-light opacity-75 mb-1">Tình Trạng Thông Tin</label>
+                                    <label class="small text-white mb-1">Tình Trạng Thông Tin</label>
                                     <input type="text" id="inp-info" value="Trắng thông tin" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="small text-light opacity-75 mb-1">Danh Sách Link Ảnh (Mỗi link 1 ảnh trên 1 dòng)</label>
+                                    <label class="small text-white mb-1">Danh Sách Link Ảnh (Mỗi link 1 ảnh trên 1 dòng)</label>
                                     <textarea id="inp-images" rows="2" placeholder="https://..." class="form-control form-control-sm font-monospace"></textarea>
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="small text-light opacity-75 mb-1">Mô Tả Chi Tiết Skin VIP & Ngọc</label>
+                                    <label class="small text-white mb-1">Mô Tả Chi Tiết Skin VIP & Ngọc</label>
                                     <textarea id="inp-desc" rows="2" placeholder="Chi tiết skin..." class="form-control form-control-sm"></textarea>
                                 </div>
                             </div>
@@ -423,19 +425,19 @@
                         <h6 class="text-warning fw-bold mb-3"><i class="fa-solid fa-gear me-1"></i> Cài Đặt Thông Tin Chung Cho Shop</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="small text-light opacity-75 mb-1">Tên Shop Của Bạn (Ví dụ: Giabaoreg.com)</label>
+                                <label class="small text-white mb-1">Tên Shop Của Bạn (Ví dụ: Giabaoreg.com)</label>
                                 <input type="text" id="cfg-shop-name" class="form-control form-control-sm">
                             </div>
                             <div class="col-md-6">
-                                <label class="small text-light opacity-75 mb-1">Số Điện Thoại Zalo (Nhận khách chốt đơn)</label>
+                                <label class="small text-white mb-1">Số Điện Thoại Zalo (Nhận khách chốt đơn)</label>
                                 <input type="text" id="cfg-zalo" class="form-control form-control-sm">
                             </div>
                             <div class="col-md-6">
-                                <label class="small text-light opacity-75 mb-1">Link Facebook / Messenger</label>
+                                <label class="small text-white mb-1">Link Facebook / Messenger</label>
                                 <input type="text" id="cfg-fb" class="form-control form-control-sm">
                             </div>
                             <div class="col-md-6">
-                                <label class="small text-light opacity-75 mb-1">Mật Khẩu Quản Lý Shop</label>
+                                <label class="small text-white mb-1">Mật Khẩu Quản Lý Shop</label>
                                 <input type="text" id="cfg-pass" class="form-control form-control-sm">
                             </div>
                         </div>
