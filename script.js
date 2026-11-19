@@ -20,6 +20,7 @@ const FALLBACK_IMG =
 const DEFAULT_CONFIG = {
   id: 1,
   shop_name: "Giabaoreg.com",
+  zalo_phone: "",
   zalo: "https://zalo.me/",
   fb: "https://m.me/"
 };
@@ -29,8 +30,7 @@ const DEMO_ACCOUNTS = [
     id: -1,
     code: "LQ001",
     title: "Acc Mẫu - Rank Cao Thủ (Hãy thêm acc thật trong Quản Lý Shop)",
-    price: 350000,
-    old_price: 500000,
+    price: 250000,
     rank: "Cao Thủ",
     heroes: 108,
     skins: 145,
@@ -49,6 +49,7 @@ let currentUser = null;
 let accountsData = [];
 let shopConfig = { ...DEFAULT_CONFIG };
 let currentFilter = "all";
+let currentRankFilter = "all";
 let currentSort = "default";
 let searchKeyword = "";
 let detailGalleryIndex = 0;
@@ -85,6 +86,10 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function cleanPhone(raw) {
+  return String(raw || "").replace(/\D+/g, "");
 }
 
 function showToast(message, type = "info") {
@@ -160,7 +165,6 @@ function normalizeAccountRow(row) {
     code: String(row.code || "LQ").trim(),
     title: String(row.title || "Tài khoản Liên Quân").trim(),
     price: Number(row.price) || 0,
-    old_price: Number(row.old_price) || 0,
     rank: String(row.rank || "Không Rank").trim(),
     heroes: Number(row.heroes) || 0,
     skins: Number(row.skins) || 0,
@@ -193,7 +197,14 @@ function applyShopConfigToUI() {
     el.textContent = shopConfig.shop_name || DEFAULT_CONFIG.shop_name;
   });
 
-  const zaloHref = shopConfig.zalo || DEFAULT_CONFIG.zalo;
+  const digits = cleanPhone(shopConfig.zalo_phone);
+  const zaloHref =
+    shopConfig.zalo && shopConfig.zalo !== "https://zalo.me/"
+      ? shopConfig.zalo
+      : digits
+      ? `https://zalo.me/${digits}`
+      : DEFAULT_CONFIG.zalo;
+
   const fbHref = shopConfig.fb || DEFAULT_CONFIG.fb;
 
   ["zaloContactBtn", "mainZaloBtn"].forEach((id) => {
@@ -209,10 +220,23 @@ function applyShopConfigToUI() {
     }
   });
 
+  const phoneBadge = document.getElementById("zaloPhoneDisplay");
+  const phoneText = document.getElementById("zaloPhoneText");
+  if (phoneBadge && phoneText) {
+    if (digits) {
+      phoneText.textContent = digits;
+      phoneBadge.style.display = "inline-flex";
+    } else {
+      phoneBadge.style.display = "none";
+    }
+  }
+
   const cfgNameInput = document.getElementById("cfgShopName");
+  const cfgPhoneInput = document.getElementById("cfgZaloPhone");
   const cfgZaloInput = document.getElementById("cfgZalo");
   const cfgFbInput = document.getElementById("cfgFb");
   if (cfgNameInput) cfgNameInput.value = shopConfig.shop_name || "";
+  if (cfgPhoneInput) cfgPhoneInput.value = shopConfig.zalo_phone || digits || "";
   if (cfgZaloInput) cfgZaloInput.value = zaloHref;
   if (cfgFbInput) cfgFbInput.value = fbHref;
 }
@@ -231,10 +255,16 @@ async function fetchShopConfig() {
       return;
     }
     if (data) {
+      let extractedPhone = String(data.zalo_phone || "").trim();
+      if (!extractedPhone && typeof data.zalo === "string") {
+        const match = data.zalo.match(/zalo\.me\/(\d{7,15})/i);
+        if (match) extractedPhone = match[1];
+      }
       shopConfig = {
         id: 1,
         shop_name: data.shop_name || DEFAULT_CONFIG.shop_name,
-        zalo: data.zalo || DEFAULT_CONFIG.zalo,
+        zalo_phone: extractedPhone,
+        zalo: data.zalo || (extractedPhone ? `https://zalo.me/${extractedPhone}` : DEFAULT_CONFIG.zalo),
         fb: data.fb || DEFAULT_CONFIG.fb
       };
       applyShopConfigToUI();
@@ -310,18 +340,23 @@ function getFilteredAccounts() {
     list = list.filter((a) => !a.sold);
   } else if (currentFilter === "sold") {
     list = list.filter((a) => a.sold);
-  } else if (currentFilter === "under100") {
-    list = list.filter((a) => !a.sold && a.price > 0 && a.price < 100000);
-  } else if (currentFilter === "100to300") {
-    list = list.filter((a) => !a.sold && a.price >= 100000 && a.price <= 300000);
-  } else if (currentFilter === "over300") {
-    list = list.filter((a) => !a.sold && a.price > 300000);
+  } else if (currentFilter === "under50") {
+    list = list.filter((a) => !a.sold && a.price > 0 && a.price < 50000);
+  } else if (currentFilter === "50to150") {
+    list = list.filter((a) => !a.sold && a.price >= 50000 && a.price <= 150000);
+  } else if (currentFilter === "150to300") {
+    list = list.filter((a) => !a.sold && a.price > 150000 && a.price <= 300000);
+  } else if (currentFilter === "300to500") {
+    list = list.filter((a) => !a.sold && a.price > 300000 && a.price <= 500000);
+  } else if (currentFilter === "over500") {
+    list = list.filter((a) => !a.sold && a.price > 500000);
   } else if (currentFilter === "manySkins") {
     list = list.filter((a) => !a.sold && a.skins >= 100);
-  } else if (currentFilter === "highrank") {
-    list = list.filter(
-      (a) => !a.sold && /cao thủ|chiến tướng|thách đấu/i.test(a.rank || "")
-    );
+  }
+
+  if (currentRankFilter && currentRankFilter !== "all") {
+    const targetRank = currentRankFilter.toLowerCase();
+    list = list.filter((a) => String(a.rank || "").toLowerCase().includes(targetRank));
   }
 
   if (searchKeyword.trim()) {
@@ -365,10 +400,6 @@ function renderAccounts() {
   grid.innerHTML = list
     .map((acc) => {
       const thumb = acc.images[0] || FALLBACK_IMG;
-      const discount =
-        acc.old_price > acc.price && acc.price > 0
-          ? Math.round(((acc.old_price - acc.price) / acc.old_price) * 100)
-          : 0;
 
       return `
         <article class="acc-card rgb-frame ${acc.sold ? "is-sold" : ""}" data-id="${acc.id}">
@@ -380,7 +411,6 @@ function renderAccounts() {
               onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
             />
             <span class="acc-code">#${escapeHtml(acc.code)}</span>
-            ${discount > 0 && !acc.sold ? `<span class="acc-sale">-${discount}%</span>` : ""}
             ${acc.sold ? `<span class="acc-sold-badge">ĐÃ BÁN</span>` : ""}
           </div>
           <div class="acc-body">
@@ -392,14 +422,7 @@ function renderAccounts() {
             </div>
             <div class="acc-info-tag">${escapeHtml(acc.info)}</div>
             <div class="acc-footer">
-              <div class="acc-prices">
-                <span class="acc-price">${formatVND(acc.price)}</span>
-                ${
-                  acc.old_price > acc.price
-                    ? `<del class="acc-old-price">${formatVND(acc.old_price)}</del>`
-                    : ""
-                }
-              </div>
+              <span class="acc-price">${acc.sold ? "ĐÃ BÁN" : formatVND(acc.price)}</span>
               <button type="button" class="btn-detail" onclick="openAccountDetail(${acc.id})">
                 ${acc.sold ? "Xem lại" : "Chi tiết"}
               </button>
@@ -426,7 +449,6 @@ function openAccountDetail(id) {
   const titleEl = document.getElementById("detailTitle");
   const codeEl = document.getElementById("detailCode");
   const priceEl = document.getElementById("detailPrice");
-  const oldPriceEl = document.getElementById("detailOldPrice");
   const rankEl = document.getElementById("detailRank");
   const heroesEl = document.getElementById("detailHeroes");
   const skinsEl = document.getElementById("detailSkins");
@@ -437,9 +459,6 @@ function openAccountDetail(id) {
   if (titleEl) titleEl.textContent = acc.title;
   if (codeEl) codeEl.textContent = "Mã acc: #" + acc.code;
   if (priceEl) priceEl.textContent = acc.sold ? "ĐÃ BÁN" : formatVND(acc.price);
-  if (oldPriceEl) {
-    oldPriceEl.textContent = acc.old_price > acc.price ? formatVND(acc.old_price) : "";
-  }
   if (rankEl) rankEl.textContent = acc.rank;
   if (heroesEl) heroesEl.textContent = String(acc.heroes);
   if (skinsEl) skinsEl.textContent = String(acc.skins);
@@ -492,7 +511,13 @@ function openAccountDetail(id) {
       buyBtn.textContent = `Mua ngay acc #${acc.code}`;
       buyBtn.disabled = false;
       buyBtn.onclick = () => {
-        const contactTarget = shopConfig.zalo || shopConfig.fb || "https://zalo.me/";
+        const digits = cleanPhone(shopConfig.zalo_phone);
+        const contactTarget =
+          shopConfig.zalo && shopConfig.zalo !== "https://zalo.me/"
+            ? shopConfig.zalo
+            : digits
+            ? `https://zalo.me/${digits}`
+            : shopConfig.fb || "https://zalo.me/";
         showToast(`Đang mở liên hệ mua acc #${acc.code}...`, "info");
         window.open(contactTarget, "_blank", "noopener,noreferrer");
       };
@@ -628,7 +653,6 @@ function startEditAccount(id) {
   setVal("accCode", acc.code);
   setVal("accTitle", acc.title);
   setVal("accPrice", acc.price);
-  setVal("accOldPrice", acc.old_price);
   setVal("accRank", acc.rank);
   setVal("accHeroes", acc.heroes);
   setVal("accSkins", acc.skins);
@@ -670,7 +694,6 @@ async function handleSaveAccount(e) {
     code,
     title,
     price: getNum("accPrice"),
-    old_price: getNum("accOldPrice"),
     rank: getVal("accRank") || "Không Rank",
     heroes: getNum("accHeroes"),
     skins: getNum("accSkins"),
@@ -763,17 +786,43 @@ async function handleSaveConfig(e) {
     return;
   }
 
+  const shopName =
+    (document.getElementById("cfgShopName")?.value || "").trim() || DEFAULT_CONFIG.shop_name;
+  const zaloPhone = cleanPhone(document.getElementById("cfgZaloPhone")?.value || "");
+  let zaloLink = (document.getElementById("cfgZalo")?.value || "").trim();
+  const fbLink = (document.getElementById("cfgFb")?.value || "").trim() || DEFAULT_CONFIG.fb;
+
+  if (zaloPhone && (!zaloLink || zaloLink === "https://zalo.me/")) {
+    zaloLink = `https://zalo.me/${zaloPhone}`;
+  } else if (!zaloLink) {
+    zaloLink = DEFAULT_CONFIG.zalo;
+  }
+
   const nextConfig = {
     id: 1,
-    shop_name:
-      (document.getElementById("cfgShopName")?.value || "").trim() || DEFAULT_CONFIG.shop_name,
-    zalo: (document.getElementById("cfgZalo")?.value || "").trim() || DEFAULT_CONFIG.zalo,
-    fb: (document.getElementById("cfgFb")?.value || "").trim() || DEFAULT_CONFIG.fb
+    shop_name: shopName,
+    zalo_phone: zaloPhone,
+    zalo: zaloLink,
+    fb: fbLink
   };
 
-  const { error } = await sbClient
+  let { error } = await sbClient
     .from("shop_config")
     .upsert(nextConfig, { onConflict: "id" });
+
+  // Dự phòng nếu bảng shop_config chưa thêm cột zalo_phone
+  if (error && /zalo_phone/i.test(error.message)) {
+    const fallbackCfg = {
+      id: 1,
+      shop_name: shopName,
+      zalo: zaloLink,
+      fb: fbLink
+    };
+    const retry = await sbClient
+      .from("shop_config")
+      .upsert(fallbackCfg, { onConflict: "id" });
+    error = retry.error;
+  }
 
   if (error) {
     showToast("Lưu cấu hình lỗi: " + error.message, "error");
@@ -846,7 +895,6 @@ function subscribeRealtime() {
   }
 }
 
-/* Bắt sự kiện dự phòng để nút Quản Lý Shop luôn mở được */
 document.addEventListener("click", (e) => {
   const openBtn = e.target.closest("#openAdminBtn");
   if (openBtn) {
@@ -873,6 +921,15 @@ function bindEvents() {
       document.querySelectorAll("[data-filter]").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       currentFilter = btn.getAttribute("data-filter") || "all";
+      renderAccounts();
+    });
+  });
+
+  document.querySelectorAll("[data-rank-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-rank-filter]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentRankFilter = btn.getAttribute("data-rank-filter") || "all";
       renderAccounts();
     });
   });
