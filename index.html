@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Giabaoreg.com - Kho Tài Khoản Liên Quân Mobile</title>
   <link rel="stylesheet" href="style.css" />
   <style>
@@ -29,6 +29,10 @@
       color: var(--text-main);
       line-height: 1.5;
       min-height: 100vh;
+    }
+
+    body.modal-open {
+      overflow: hidden;
     }
 
     @keyframes rgbFlow {
@@ -80,8 +84,9 @@
       position: sticky;
       top: 0;
       z-index: 40;
-      background: rgba(7, 11, 20, 0.78);
+      background: rgba(7, 11, 20, 0.84);
       backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(148, 163, 184, 0.16);
     }
 
@@ -187,8 +192,8 @@
     }
 
     .btn-sm {
-      padding: 5px 10px;
-      font-size: 0.78rem;
+      padding: 6px 11px;
+      font-size: 0.8rem;
       border-radius: 8px;
     }
 
@@ -371,13 +376,18 @@
     }
 
     .input, .select, .textarea {
-      padding: 9px 12px;
+      padding: 10px 12px;
       border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.24);
-      background: rgba(7, 11, 20, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: #070b14;
       color: #f8fafc;
-      font-size: 0.92rem;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      font-size: 16px;
+      width: 100%;
+    }
+
+    .search-sort .input,
+    .search-sort .select {
+      width: auto;
     }
 
     .input:focus, .select:focus, .textarea:focus {
@@ -525,12 +535,6 @@
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-      transition: transform 0.16s ease, filter 0.16s ease;
-    }
-
-    .btn-detail:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.08);
     }
 
     .modal-backdrop {
@@ -538,22 +542,21 @@
       position: fixed;
       inset: 0;
       z-index: 100;
-      background: rgba(2, 6, 23, 0.84);
-      backdrop-filter: blur(6px);
-      align-items: center;
+      background: #020617;
+      background: rgba(2, 6, 23, 0.94);
+      align-items: flex-start;
       justify-content: center;
-      padding: 14px;
+      padding: 12px;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-card {
       width: 100%;
       max-width: 800px;
-      max-height: 90vh;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 20px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      margin: 8px auto 32px;
+      padding: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
     }
 
     .modal-header {
@@ -625,7 +628,7 @@
 <body>
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#" class="brand-link">
+      <a href="javascript:void(0)" class="brand-link">
         <span aria-hidden="true">👑</span>
         <span>
           <span data-shop-name>Giabaoreg.com</span>
@@ -849,7 +852,7 @@
           <button id="adminLogoutBtn" type="button" class="btn btn-danger btn-sm">Đăng xuất</button>
         </div>
 
-        <form id="accountForm" style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
+        <form id="accountForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
           <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản Liên Quân</h3>
           <div class="form-grid">
             <div class="form-field">
@@ -911,7 +914,7 @@
           </div>
 
           <div class="form-field" style="flex-direction:row;align-items:center;gap:8px;">
-            <input id="accSold" type="checkbox" />
+            <input id="accSold" type="checkbox" style="width:18px;height:18px;" />
             <label for="accSold" style="margin:0;">Đánh dấu tài khoản này là ĐÃ BÁN</label>
           </div>
 
@@ -921,7 +924,7 @@
           </div>
         </form>
 
-        <form id="configForm" style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
+        <form id="configForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
           <h3 style="margin:0 0 12px;font-size:1rem;">Cấu hình thông tin shop</h3>
           <div class="form-grid">
             <div class="form-field">
