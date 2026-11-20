@@ -1,11 +1,12 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (AUTO SYNC + BUY COPY SYNTAX)
+   GIABAOREG.COM - SCRIPT.JS (REVIEWS + AUTO SYNC + BUY COPY)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_o8O08I4ZFykn4f7It54BmA_tr_8lhDq";
 const ADMIN_DEFAULT_EMAIL = "nguyenducminh2011nd@gmail.com";
 const STORAGE_BUCKET = "account-images";
+const LOCAL_REVIEWS_KEY = "giabaoreg_reviews_v1";
 
 const FALLBACK_IMG =
   "data:image/svg+xml;charset=UTF-8," +
@@ -44,6 +45,25 @@ const DEMO_ACCOUNTS = [
   }
 ];
 
+const DEFAULT_REVIEWS = [
+  {
+    id: -101,
+    reviewer_name: "Hoàng Nam",
+    acc_code: "0001",
+    rating: 5,
+    comment: "Acc chuẩn mô tả, giao nhanh, đổi thông tin dễ dàng. Sẽ ủng hộ thêm!",
+    created_at: "2026-11-18T10:00:00Z"
+  },
+  {
+    id: -102,
+    reviewer_name: "Tuấn Kiệt",
+    acc_code: "LQ102",
+    rating: 5,
+    comment: "Shop hỗ trợ nhiệt tình qua Zalo/Mess, giá rẻ hơn nhiều chỗ khác.",
+    created_at: "2026-11-19T15:30:00Z"
+  }
+];
+
 function createUniversalStorage() {
   const mem = {};
   try {
@@ -60,10 +80,14 @@ function createUniversalStorage() {
   }
 }
 
+const safeStorage = createUniversalStorage();
+
 let sbClient = null;
 let isSupabaseConnected = false;
+let hasReviewsTable = true;
 let currentUser = null;
 let accountsData = [];
+let reviewsData = [];
 let shopConfig = { ...DEFAULT_CONFIG };
 let currentFilter = "all";
 let currentRankFilter = "all";
@@ -75,6 +99,7 @@ let editingAccId = null;
 let onlineCount = 7;
 let selectedUploadFiles = [];
 let isSavingAccount = false;
+let isSubmittingReview = false;
 let realtimeTimer = null;
 
 function createSupabaseInstance() {
@@ -87,7 +112,7 @@ function createSupabaseInstance() {
   }
   return globalLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-      storage: createUniversalStorage(),
+      storage: safeStorage,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false
@@ -98,6 +123,13 @@ function createSupabaseInstance() {
 function formatVND(num) {
   const n = Number(num) || 0;
   return n.toLocaleString("vi-VN") + "đ";
+}
+
+function formatDateVN(isoStr) {
+  if (!isoStr) return "Vừa xong";
+  const d = new Date(isoStr);
+  if (Number.isNaN(d.getTime())) return "Vừa xong";
+  return d.toLocaleDateString("vi-VN");
 }
 
 function escapeHtml(str) {
@@ -188,6 +220,191 @@ function buildBuySyntax(acc) {
   const code = String(acc.code || "").replace(/^#+/, "");
   const priceText = formatVND(acc.price);
   return `Chào shop, mình muốn mua acc Liên Quân mã #${code} (${acc.title}) - Giá ${priceText}. Acc này còn không shop?`;
+}
+
+function loadLocalReviews() {
+  try {
+    const raw = safeStorage.getItem(LOCAL_REVIEWS_KEY);
+    if (!raw) return [...DEFAULT_REVIEWS];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_REVIEWS];
+  } catch {
+    return [...DEFAULT_REVIEWS];
+  }
+}
+
+function saveLocalReviews(list) {
+  try {
+    safeStorage.setItem(LOCAL_REVIEWS_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+function normalizeReviewRow(row) {
+  const starNum = Math.max(1, Math.min(5, Number(row.rating) || 5));
+  return {
+    id: row.id,
+    reviewer_name: String(row.reviewer_name || "Khách hàng").trim(),
+    acc_code: String(row.acc_code || "").replace(/^#+/, "").trim(),
+    rating: starNum,
+    comment: String(row.comment || "").trim(),
+    created_at: row.created_at || new Date().toISOString()
+  };
+}
+
+function renderReviews() {
+  const listEl = document.getElementById("reviewsList");
+  const avgEl = document.getElementById("avgRatingText");
+  const totalEl = document.getElementById("totalReviewsText");
+  if (!listEl) return;
+
+  const list = reviewsData.length > 0 ? reviewsData : DEFAULT_REVIEWS;
+  const total = list.length;
+  const sum = list.reduce((acc, item) => acc + (Number(item.rating) || 5), 0);
+  const avg = total > 0 ? (sum / total).toFixed(1) : "5.0";
+
+  if (avgEl) avgEl.textContent = avg;
+  if (totalEl) totalEl.textContent = String(total);
+
+  listEl.innerHTML = list
+    .map((rv) => {
+      const stars = "★".repeat(rv.rating) + "☆".repeat(5 - rv.rating);
+      return `
+        <article class="review-card">
+          <div class="review-top">
+            <span class="review-name">${escapeHtml(rv.reviewer_name)}</span>
+            <span class="review-stars" aria-label="${rv.rating} sao">${stars}</span>
+          </div>
+          ${
+            rv.acc_code
+              ? `<span class="review-acc-badge">Acc #${escapeHtml(rv.acc_code)}</span>`
+              : ""
+          }
+          <p class="review-comment">${escapeHtml(rv.comment)}</p>
+          <div class="review-foot">
+            <span>${escapeHtml(formatDateVN(rv.created_at))}</span>
+            ${
+              currentUser
+                ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteReview(${rv.id})">Xóa</button>`
+                : ""
+            }
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function fetchReviews() {
+  if (!sbClient || !hasReviewsTable) {
+    reviewsData = loadLocalReviews();
+    renderReviews();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from("reviews")
+      .select("*")
+      .order("id", { ascending: false });
+
+    if (error) {
+      hasReviewsTable = false;
+      reviewsData = loadLocalReviews();
+      renderReviews();
+      return;
+    }
+
+    const rows = Array.isArray(data) ? data.map(normalizeReviewRow) : [];
+    reviewsData = rows.length > 0 ? rows : loadLocalReviews();
+    renderReviews();
+  } catch {
+    reviewsData = loadLocalReviews();
+    renderReviews();
+  }
+}
+
+async function handleCreateReview(e) {
+  e.preventDefault();
+  if (isSubmittingReview) return;
+
+  const nameInput = document.getElementById("reviewName");
+  const codeInput = document.getElementById("reviewAccCode");
+  const ratingSelect = document.getElementById("reviewRating");
+  const commentInput = document.getElementById("reviewComment");
+  const submitBtn = document.getElementById("submitReviewBtn");
+
+  const reviewer_name = (nameInput?.value || "").trim();
+  const acc_code = (codeInput?.value || "").replace(/^#+/, "").trim();
+  const rating = Math.max(1, Math.min(5, Number(ratingSelect?.value) || 5));
+  const comment = (commentInput?.value || "").trim();
+
+  if (!reviewer_name || !comment) {
+    showToast("Vui lòng nhập tên và nội dung đánh giá.", "warning");
+    return;
+  }
+
+  isSubmittingReview = true;
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const payload = { reviewer_name, acc_code, rating, comment };
+
+    if (sbClient && hasReviewsTable) {
+      const { error } = await sbClient.from("reviews").insert([payload]);
+      if (!error) {
+        if (nameInput) nameInput.value = "";
+        if (codeInput) codeInput.value = "";
+        if (commentInput) commentInput.value = "";
+        await fetchReviews();
+        showToast("Cảm ơn bạn đã gửi đánh giá!", "success");
+        return;
+      }
+      hasReviewsTable = false;
+    }
+
+    const newItem = normalizeReviewRow({
+      ...payload,
+      id: Date.now(),
+      created_at: new Date().toISOString()
+    });
+    const baseList = reviewsData.filter((r) => !DEFAULT_REVIEWS.some((d) => d.id === r.id));
+    const nextList = [newItem, ...baseList];
+    saveLocalReviews(nextList);
+    reviewsData = nextList;
+    renderReviews();
+
+    if (nameInput) nameInput.value = "";
+    if (codeInput) codeInput.value = "";
+    if (commentInput) commentInput.value = "";
+    showToast("Đã đăng đánh giá của bạn!", "success");
+  } finally {
+    isSubmittingReview = false;
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function deleteReview(id) {
+  if (!currentUser) {
+    showToast("Cần đăng nhập Admin để xóa đánh giá.", "warning");
+    return;
+  }
+
+  if (sbClient && hasReviewsTable && Number(id) > 0) {
+    const { error } = await sbClient.from("reviews").delete().eq("id", id);
+    if (error) {
+      showToast("Xóa đánh giá lỗi: " + error.message, "error");
+      return;
+    }
+    await fetchReviews();
+    showToast("Đã xóa đánh giá.", "success");
+    return;
+  }
+
+  const nextList = reviewsData.filter((r) => String(r.id) !== String(id));
+  reviewsData = nextList;
+  saveLocalReviews(nextList);
+  renderReviews();
+  showToast("Đã xóa đánh giá.", "success");
 }
 
 function normalizeImages(rawImages) {
@@ -696,6 +913,7 @@ function syncAuthUI() {
     if (panelBox) panelBox.style.display = "none";
     if (userBadge) userBadge.textContent = "Chưa đăng nhập phiên quản trị";
   }
+  renderReviews();
 }
 
 async function openAdminModal() {
@@ -756,7 +974,7 @@ async function handleAdminLogin(e) {
     currentUser = data?.user || null;
     if (passInput) passInput.value = "";
     syncAuthUI();
-    await Promise.all([fetchShopConfig(), fetchAccounts(true, true)]);
+    await Promise.all([fetchShopConfig(), fetchAccounts(true, true), fetchReviews()]);
     showToast("Đăng nhập quản trị thành công!", "success");
   } catch (err) {
     showToast("Lỗi kết nối khi đăng nhập: " + (err?.message || err), "error");
@@ -1091,6 +1309,13 @@ function subscribeRealtime() {
             scheduleRealtimeRefresh(() => fetchShopConfig());
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "reviews" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchReviews());
+          }
+        )
         .subscribe();
     } catch (err) {
       console.warn("Không thể bật Realtime:", err);
@@ -1101,6 +1326,7 @@ function subscribeRealtime() {
     if (!document.hidden && !isAdminModalOpen() && !isSavingAccount) {
       fetchShopConfig();
       fetchAccounts(false, false);
+      fetchReviews();
     }
   }, 15000);
 
@@ -1108,6 +1334,7 @@ function subscribeRealtime() {
     if (!document.hidden && !isAdminModalOpen() && !isSavingAccount) {
       fetchShopConfig();
       fetchAccounts(false, false);
+      fetchReviews();
     }
   });
 }
@@ -1192,7 +1419,7 @@ function bindEvents() {
   const syncNowBtn = document.getElementById("syncNowBtn");
   if (syncNowBtn) {
     syncNowBtn.addEventListener("click", async () => {
-      await Promise.all([fetchShopConfig(), fetchAccounts(true, true)]);
+      await Promise.all([fetchShopConfig(), fetchAccounts(true, true), fetchReviews()]);
       showToast("Đã đồng bộ dữ liệu mới nhất từ Supabase.", "success");
     });
   }
@@ -1211,6 +1438,9 @@ function bindEvents() {
 
   const cfgForm = document.getElementById("configForm");
   if (cfgForm) cfgForm.addEventListener("submit", handleSaveConfig);
+
+  const reviewForm = document.getElementById("reviewForm");
+  if (reviewForm) reviewForm.addEventListener("submit", handleCreateReview);
 
   const detailModal = document.getElementById("detailModal");
   if (detailModal) {
@@ -1231,7 +1461,9 @@ async function initApp() {
   startOnlineCounter();
   applyShopConfigToUI();
   accountsData = [...DEMO_ACCOUNTS];
+  reviewsData = loadLocalReviews();
   renderAccounts();
+  renderReviews();
   updateStats();
 
   try {
@@ -1250,7 +1482,7 @@ async function initApp() {
       syncAuthUI();
     });
 
-    await Promise.all([fetchShopConfig(), fetchAccounts(false, true)]);
+    await Promise.all([fetchShopConfig(), fetchAccounts(false, true), fetchReviews()]);
     subscribeRealtime();
   } catch (err) {
     console.error("Lỗi khởi tạo ứng dụng:", err);
