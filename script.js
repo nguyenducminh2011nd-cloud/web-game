@@ -1,12 +1,13 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (REVIEWS + AUTO SYNC + BUY COPY)
+   GIABAOREG.COM - SCRIPT.JS (FULL - FIX DELETE REVIEWS BUG)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_o8O08I4ZFykn4f7It54BmA_tr_8lhDq";
 const ADMIN_DEFAULT_EMAIL = "nguyenducminh2011nd@gmail.com";
 const STORAGE_BUCKET = "account-images";
-const LOCAL_REVIEWS_KEY = "giabaoreg_reviews_v1";
+const LOCAL_REVIEWS_KEY = "giabaoreg_reviews_v2";
+const LOCAL_REVIEWS_INIT_KEY = "giabaoreg_reviews_initialized_v2";
 
 const FALLBACK_IMG =
   "data:image/svg+xml;charset=UTF-8," +
@@ -42,25 +43,6 @@ const DEMO_ACCOUNTS = [
       "Dữ liệu mẫu hiển thị khi bảng accounts trên Supabase chưa có acc. Đăng nhập Quản Lý Shop để thêm acc thật.",
     sold: false,
     _isDemo: true
-  }
-];
-
-const DEFAULT_REVIEWS = [
-  {
-    id: -101,
-    reviewer_name: "Hoàng Nam",
-    acc_code: "0001",
-    rating: 5,
-    comment: "Acc chuẩn mô tả, giao nhanh, đổi thông tin dễ dàng. Sẽ ủng hộ thêm!",
-    created_at: "2026-11-18T10:00:00Z"
-  },
-  {
-    id: -102,
-    reviewer_name: "Tuấn Kiệt",
-    acc_code: "LQ102",
-    rating: 5,
-    comment: "Shop hỗ trợ nhiệt tình qua Zalo/Mess, giá rẻ hơn nhiều chỗ khác.",
-    created_at: "2026-11-19T15:30:00Z"
   }
 ];
 
@@ -225,17 +207,18 @@ function buildBuySyntax(acc) {
 function loadLocalReviews() {
   try {
     const raw = safeStorage.getItem(LOCAL_REVIEWS_KEY);
-    if (!raw) return [...DEFAULT_REVIEWS];
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_REVIEWS];
+    return Array.isArray(parsed) ? parsed.map(normalizeReviewRow) : [];
   } catch {
-    return [...DEFAULT_REVIEWS];
+    return [];
   }
 }
 
 function saveLocalReviews(list) {
   try {
     safeStorage.setItem(LOCAL_REVIEWS_KEY, JSON.stringify(list));
+    safeStorage.setItem(LOCAL_REVIEWS_INIT_KEY, "1");
   } catch {}
 }
 
@@ -257,13 +240,22 @@ function renderReviews() {
   const totalEl = document.getElementById("totalReviewsText");
   if (!listEl) return;
 
-  const list = reviewsData.length > 0 ? reviewsData : DEFAULT_REVIEWS;
+  const list = Array.isArray(reviewsData) ? reviewsData : [];
   const total = list.length;
   const sum = list.reduce((acc, item) => acc + (Number(item.rating) || 5), 0);
   const avg = total > 0 ? (sum / total).toFixed(1) : "5.0";
 
   if (avgEl) avgEl.textContent = avg;
   if (totalEl) totalEl.textContent = String(total);
+
+  if (total === 0) {
+    listEl.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:24px 14px;color:#94a3b8;background:rgba(7,11,20,0.65);border-radius:12px;border:1px dashed rgba(148,163,184,0.22);">
+        Chưa có đánh giá nào. Hãy là người đầu tiên để lại nhận xét cho shop!
+      </div>
+    `;
+    return;
+  }
 
   listEl.innerHTML = list
     .map((rv) => {
@@ -284,7 +276,7 @@ function renderReviews() {
             <span>${escapeHtml(formatDateVN(rv.created_at))}</span>
             ${
               currentUser
-                ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteReview(${rv.id})">Xóa</button>`
+                ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteReview(${JSON.stringify(rv.id)})">Xóa</button>`
                 : ""
             }
           </div>
@@ -314,8 +306,7 @@ async function fetchReviews() {
       return;
     }
 
-    const rows = Array.isArray(data) ? data.map(normalizeReviewRow) : [];
-    reviewsData = rows.length > 0 ? rows : loadLocalReviews();
+    reviewsData = Array.isArray(data) ? data.map(normalizeReviewRow) : [];
     renderReviews();
   } catch {
     reviewsData = loadLocalReviews();
@@ -367,8 +358,7 @@ async function handleCreateReview(e) {
       id: Date.now(),
       created_at: new Date().toISOString()
     });
-    const baseList = reviewsData.filter((r) => !DEFAULT_REVIEWS.some((d) => d.id === r.id));
-    const nextList = [newItem, ...baseList];
+    const nextList = [newItem, ...loadLocalReviews()];
     saveLocalReviews(nextList);
     reviewsData = nextList;
     renderReviews();
@@ -389,20 +379,21 @@ async function deleteReview(id) {
     return;
   }
 
-  if (sbClient && hasReviewsTable && Number(id) > 0) {
+  if (sbClient && hasReviewsTable) {
     const { error } = await sbClient.from("reviews").delete().eq("id", id);
     if (error) {
       showToast("Xóa đánh giá lỗi: " + error.message, "error");
       return;
     }
-    await fetchReviews();
+    reviewsData = reviewsData.filter((r) => String(r.id) !== String(id));
+    renderReviews();
     showToast("Đã xóa đánh giá.", "success");
     return;
   }
 
-  const nextList = reviewsData.filter((r) => String(r.id) !== String(id));
-  reviewsData = nextList;
+  const nextList = loadLocalReviews().filter((r) => String(r.id) !== String(id));
   saveLocalReviews(nextList);
+  reviewsData = nextList;
   renderReviews();
   showToast("Đã xóa đánh giá.", "success");
 }
