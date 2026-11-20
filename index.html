@@ -376,7 +376,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
       gap: 18px;
-      margin-bottom: 36px;
+      margin-bottom: 32px;
     }
 
     .acc-card {
@@ -490,6 +490,112 @@
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
+    }
+
+    .reviews-section {
+      padding: 20px;
+      margin-bottom: 36px;
+    }
+
+    .reviews-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .reviews-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      color: #f8fafc;
+    }
+
+    .rating-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(250, 204, 21, 0.12);
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      color: #fde047;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .review-form-box {
+      background: rgba(7, 11, 20, 0.78);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      margin-bottom: 18px;
+    }
+
+    .reviews-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+    }
+
+    .review-card {
+      background: rgba(7, 11, 20, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 12px;
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .review-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .review-name {
+      font-weight: 700;
+      color: #f8fafc;
+      font-size: 0.92rem;
+    }
+
+    .review-stars {
+      color: #facc15;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    .review-acc-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+      width: fit-content;
+    }
+
+    .review-comment {
+      margin: 2px 0;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      white-space: pre-line;
+    }
+
+    .review-foot {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: #64748b;
+      padding-top: 6px;
     }
 
     .modal-backdrop {
@@ -704,6 +810,46 @@
     </section>
 
     <section id="accountsGrid" class="accounts-grid" aria-live="polite"></section>
+
+    <section class="reviews-section rgb-frame" aria-label="Đánh giá từ khách hàng">
+      <div class="reviews-header">
+        <h2>⭐ ĐÁNH GIÁ TỪ KHÁCH HÀNG</h2>
+        <div class="rating-summary">
+          <span>★ <strong id="avgRatingText">5.0</strong>/5</span>
+          <span style="color:#cbd5e1;font-weight:500;">(<span id="totalReviewsText">0</span> đánh giá)</span>
+        </div>
+      </div>
+
+      <form id="reviewForm" class="review-form-box" novalidate>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="reviewName">Tên hoặc biệt danh (*)</label>
+            <input id="reviewName" type="text" class="input" placeholder="VD: Minh K53" required />
+          </div>
+          <div class="form-field">
+            <label for="reviewAccCode">Mã acc đã mua (tuỳ chọn)</label>
+            <input id="reviewAccCode" type="text" class="input" placeholder="VD: #0001 hoặc LQ101" />
+          </div>
+          <div class="form-field">
+            <label for="reviewRating">Số sao đánh giá</label>
+            <select id="reviewRating" class="select">
+              <option value="5">★★★★★ (5 sao - Rất uy tín)</option>
+              <option value="4">★★★★☆ (4 sao - Tốt)</option>
+              <option value="3">★★★☆☆ (3 sao - Bình thường)</option>
+              <option value="2">★★☆☆☆ (2 sao)</option>
+              <option value="1">★☆☆☆☆ (1 sao)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="reviewComment">Nhận xét của bạn (*)</label>
+          <textarea id="reviewComment" rows="2" class="textarea" placeholder="Acc chuẩn mô tả, giao nhanh, đổi mật khẩu dễ dàng..." required></textarea>
+        </div>
+        <button id="submitReviewBtn" type="submit" class="btn btn-primary">Gửi đánh giá</button>
+      </form>
+
+      <div id="reviewsList" class="reviews-list"></div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -920,6 +1066,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>
