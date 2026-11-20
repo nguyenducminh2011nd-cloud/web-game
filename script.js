@@ -1,5 +1,5 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (UNIVERSAL IN-APP & MOBILE SAFE)
+   GIABAOREG.COM - SCRIPT.JS (AUTO SYNC + BUY COPY SYNTAX)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
@@ -153,7 +153,41 @@ function showToast(message, type = "info") {
     toast.style.opacity = "0";
     toast.style.transform = "translateY(8px)";
     setTimeout(() => toast.remove(), 260);
-  }, 3400);
+  }, 3600);
+}
+
+async function copyTextToClipboard(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return Boolean(ok);
+  } catch {
+    return false;
+  }
+}
+
+function buildBuySyntax(acc) {
+  const code = String(acc.code || "").replace(/^#+/, "");
+  const priceText = formatVND(acc.price);
+  return `Chào shop, mình muốn mua acc Liên Quân mã #${code} (${acc.title}) - Giá ${priceText}. Acc này còn không shop?`;
 }
 
 function normalizeImages(rawImages) {
@@ -608,7 +642,9 @@ function openAccountDetail(id) {
     } else {
       buyBtn.textContent = `Mua ngay acc #${acc.code}`;
       buyBtn.disabled = false;
-      buyBtn.onclick = () => {
+      buyBtn.onclick = async () => {
+        const syntax = buildBuySyntax(acc);
+        const copied = await copyTextToClipboard(syntax);
         const digits = cleanPhone(shopConfig.zalo_phone);
         const contactTarget =
           shopConfig.zalo && shopConfig.zalo !== "https://zalo.me/"
@@ -616,7 +652,12 @@ function openAccountDetail(id) {
             : digits
             ? `https://zalo.me/${digits}`
             : shopConfig.fb || "https://zalo.me/";
-        showToast(`Đang mở liên hệ mua acc #${acc.code}...`, "info");
+
+        if (copied) {
+          showToast(`Đã sao chép cú pháp mua acc #${acc.code}! Dán tin nhắn để gửi shop.`, "success");
+        } else {
+          showToast(`Cú pháp: ${syntax}`, "info");
+        }
         window.open(contactTarget, "_blank", "noopener,noreferrer");
       };
     }
@@ -1026,32 +1067,49 @@ function scheduleRealtimeRefresh(fn) {
     if (!isAdminModalOpen() && !isSavingAccount) {
       fn();
     }
-  }, 800);
+  }, 600);
 }
 
 function subscribeRealtime() {
-  if (!sbClient || typeof sbClient.channel !== "function") return;
-  try {
-    sbClient
-      .channel("shop-realtime-sync")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "accounts" },
-        () => {
-          scheduleRealtimeRefresh(() => fetchAccounts(false, false));
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "shop_config" },
-        () => {
-          scheduleRealtimeRefresh(() => fetchShopConfig());
-        }
-      )
-      .subscribe();
-  } catch (err) {
-    console.warn("Không thể bật Realtime:", err);
+  if (!sbClient) return;
+
+  if (typeof sbClient.channel === "function") {
+    try {
+      sbClient
+        .channel("shop-realtime-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "accounts" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchAccounts(false, false));
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "shop_config" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchShopConfig());
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn("Không thể bật Realtime:", err);
+    }
   }
+
+  setInterval(() => {
+    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount) {
+      fetchShopConfig();
+      fetchAccounts(false, false);
+    }
+  }, 15000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount) {
+      fetchShopConfig();
+      fetchAccounts(false, false);
+    }
+  });
 }
 
 document.addEventListener("click", (e) => {
