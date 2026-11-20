@@ -1,5 +1,5 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (STABLE MOBILE + SUPABASE SYNC)
+   GIABAOREG.COM - SCRIPT.JS (UNIVERSAL IN-APP & MOBILE SAFE)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
@@ -44,6 +44,22 @@ const DEMO_ACCOUNTS = [
   }
 ];
 
+function createUniversalStorage() {
+  const mem = {};
+  try {
+    const testKey = "__gb_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    return window.localStorage;
+  } catch {
+    return {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null),
+      setItem: (k, v) => { mem[k] = String(v); },
+      removeItem: (k) => { delete mem[k]; }
+    };
+  }
+}
+
 let sbClient = null;
 let isSupabaseConnected = false;
 let currentUser = null;
@@ -71,6 +87,7 @@ function createSupabaseInstance() {
   }
   return globalLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
+      storage: createUniversalStorage(),
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false
@@ -96,14 +113,9 @@ function cleanPhone(raw) {
   return String(raw || "").replace(/\D+/g, "");
 }
 
-function isUserTypingInForm() {
-  const active = document.activeElement;
-  if (!active) return false;
-  const tag = active.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
-    return Boolean(active.closest("#adminModal"));
-  }
-  return false;
+function isAdminModalOpen() {
+  const modal = document.getElementById("adminModal");
+  return Boolean(modal && modal.style.display === "flex");
 }
 
 function showToast(message, type = "info") {
@@ -112,7 +124,7 @@ function showToast(message, type = "info") {
     container = document.createElement("div");
     container.id = "toastContainer";
     container.style.cssText =
-      "position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:360px;";
+      "position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:360px;pointer-events:none;";
     document.body.appendChild(container);
   }
 
@@ -357,7 +369,7 @@ async function fetchShopConfig() {
 }
 
 async function fetchAccounts(notifyError = false, forceRender = false) {
-  if (!forceRender && isUserTypingInForm()) {
+  if (!forceRender && (isAdminModalOpen() || isSavingAccount)) {
     return;
   }
 
@@ -394,9 +406,7 @@ async function fetchAccounts(notifyError = false, forceRender = false) {
     const rows = Array.isArray(data) ? data.map(normalizeAccountRow) : [];
     accountsData = rows.length > 0 ? rows : currentUser ? [] : [...DEMO_ACCOUNTS];
     renderAccounts();
-    if (!isUserTypingInForm()) {
-      renderAdminTable();
-    }
+    renderAdminTable();
     updateStats();
   } catch (err) {
     console.error("Ngoại lệ khi tải accounts:", err);
@@ -613,6 +623,7 @@ function openAccountDetail(id) {
   }
 
   modal.style.display = "flex";
+  document.body.classList.add("modal-open");
 }
 
 function closeDetailModal() {
@@ -620,6 +631,9 @@ function closeDetailModal() {
   if (!modal) return;
   modal.style.display = "none";
   activeDetailAccId = null;
+  if (!isAdminModalOpen()) {
+    document.body.classList.remove("modal-open");
+  }
 }
 
 function syncAuthUI() {
@@ -647,9 +661,8 @@ async function openAdminModal() {
   const modal = document.getElementById("adminModal");
   if (!modal) return;
 
-  if (modal.style.display !== "flex") {
-    modal.style.display = "flex";
-  }
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
 
   if (sbClient && sbClient.auth && typeof sbClient.auth.getSession === "function" && !currentUser) {
     try {
@@ -668,6 +681,8 @@ function closeAdminModal() {
   const modal = document.getElementById("adminModal");
   if (!modal) return;
   modal.style.display = "none";
+  document.body.classList.remove("modal-open");
+  fetchAccounts(false, true);
 }
 
 async function handleAdminLogin(e) {
@@ -1008,10 +1023,10 @@ function renderAdminTable() {
 function scheduleRealtimeRefresh(fn) {
   if (realtimeTimer) clearTimeout(realtimeTimer);
   realtimeTimer = setTimeout(() => {
-    if (!isUserTypingInForm() && !isSavingAccount) {
+    if (!isAdminModalOpen() && !isSavingAccount) {
       fn();
     }
-  }, 600);
+  }, 800);
 }
 
 function subscribeRealtime() {
@@ -1139,16 +1154,15 @@ function bindEvents() {
   const cfgForm = document.getElementById("configForm");
   if (cfgForm) cfgForm.addEventListener("submit", handleSaveConfig);
 
-  window.addEventListener("click", (e) => {
-    const adminModal = document.getElementById("adminModal");
-    const detailModal = document.getElementById("detailModal");
-    if (e.target === adminModal) closeAdminModal();
-    if (e.target === detailModal) closeDetailModal();
-  });
+  const detailModal = document.getElementById("detailModal");
+  if (detailModal) {
+    detailModal.addEventListener("click", (e) => {
+      if (e.target === detailModal) closeDetailModal();
+    });
+  }
 
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      closeAdminModal();
       closeDetailModal();
     }
   });
