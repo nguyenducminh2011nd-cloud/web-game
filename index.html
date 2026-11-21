@@ -625,6 +625,60 @@
       cursor: pointer;
     }
 
+    .support-event-section {
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+
+    .support-event-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .support-event-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      color: #f9a8d4;
+    }
+
+    .support-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .support-card {
+      background: rgba(7, 11, 20, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .support-status {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      width: fit-content;
+      background: rgba(250, 204, 21, 0.15);
+      color: #fde047;
+    }
+
+    .support-status.done {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+    }
+
     .reviews-section {
       padding: 20px;
       margin-bottom: 36px;
@@ -836,6 +890,9 @@
         <a id="fbContactBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
           ⚡ Hỗ Trợ Messenger
         </a>
+        <a href="#chungSucSection" class="btn btn-gold">
+          🧧 Hỗ Trợ Chung Sức
+        </a>
         <button id="openAdminBtn" type="button" class="btn btn-primary">
           ⚙️ Quản Lý Shop
         </button>
@@ -861,6 +918,9 @@
         </a>
         <a id="mainMessBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
           ⚡ Hỗ Trợ Qua Messenger
+        </a>
+        <a href="#chungSucSection" class="btn btn-gold">
+          🧧 Hỗ Trợ Chung Sức Tết
         </a>
       </div>
 
@@ -899,13 +959,13 @@
     </section>
 
     <div class="section-heading">
-      <h2>🔥 DANH MỤC ACC REG &amp; GÓI SLL</h2>
+      <h2>🔥 ACC CỜ NHON</h2>
       <span style="font-size:0.84rem;color:#94a3b8;">Chọn loại acc bên dưới để mua lẻ hoặc lấy cả lô giá ưu đãi</span>
     </div>
-    <section id="foldersGrid" class="folders-grid" aria-label="Danh mục acc reg và gói số lượng lớn"></section>
+    <section id="foldersGrid" class="folders-grid" aria-label="Acc cờ nhon"></section>
 
     <div class="section-heading">
-      <h2>🎮 KHO TÀI KHOẢN CHI TIẾT &amp; BỘ LỌC</h2>
+      <h2>🎮 CÁC TÀI KHOẢN KHÁC</h2>
       <span id="activeFolderBanner" style="font-size:0.84rem;color:#38bdf8;"></span>
     </div>
 
@@ -955,6 +1015,50 @@
 
     <section id="accountsGrid" class="accounts-grid" aria-live="polite"></section>
 
+    <!-- KHU VỰC HỖ TRỢ CHUNG SỨC TẾT LIÊN QUÂN -->
+    <section id="chungSucSection" class="support-event-section rgb-frame" aria-label="Hỗ trợ chung sức Liên Quân">
+      <div class="support-event-header">
+        <div>
+          <h2>🧧 HỖ TRỢ CHUNG SỨC LIÊN QUÂN</h2>
+          <p style="margin:4px 0 0;color:#94a3b8;font-size:0.88rem;">
+            Gửi link / mã chung sức sự kiện Tết Liên Quân để shop hỗ trợ nhanh hoặc gửi trực tiếp qua Zalo / Messenger.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a id="supportZaloBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn btn-zalo btn-sm">
+            💬 Gửi Zalo Chung Sức
+          </a>
+          <a id="supportMessBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess btn-sm">
+            ⚡ Gửi Mess Chung Sức
+          </a>
+        </div>
+      </div>
+
+      <form id="supportForm" class="review-form-box" novalidate>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="supName">Tên / Biệt danh (*)</label>
+            <input id="supName" type="text" class="input" placeholder="VD: Đức Minh" required />
+          </div>
+          <div class="form-field">
+            <label for="supEvent">Sự kiện</label>
+            <input id="supEvent" type="text" class="input" value="Chung sức Tết Liên Quân" />
+          </div>
+          <div class="form-field">
+            <label for="supLinkCode">Link hoặc mã chung sức (*)</label>
+            <input id="supLinkCode" type="text" class="input" placeholder="Dán link hoặc mã chung sức..." required />
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="supNote">Ghi chú thêm (tuỳ chọn)</label>
+          <input id="supNote" type="text" class="input" placeholder="VD: Còn thiếu 2 lượt nữa là đủ mốc..." />
+        </div>
+        <button id="submitSupportBtn" type="submit" class="btn btn-gold">🧧 Gửi yêu cầu chung sức</button>
+      </form>
+
+      <div id="supportList" class="support-list"></div>
+    </section>
+
     <section class="reviews-section rgb-frame" aria-label="Đánh giá từ khách hàng">
       <div class="reviews-header">
         <h2>⭐ ĐÁNH GIÁ TỪ KHÁCH HÀNG</h2>
@@ -1002,12 +1106,12 @@
     </div>
   </footer>
 
-  <!-- MODAL XEM GÓI ACC REG / MUA LẺ & MUA CẢ LÔ -->
+  <!-- MODAL XEM GÓI ACC CỜ NHON / MUA LẺ & MUA CẢ LÔ -->
   <div id="folderModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="folderModalTitle">
     <div class="modal-card rgb-frame">
       <div class="modal-header">
         <div>
-          <h2 id="folderModalTitle">Chi tiết danh mục acc</h2>
+          <h2 id="folderModalTitle">Chi tiết gói acc cờ nhon</h2>
           <small id="folderModalMeta" style="color:#38bdf8;"></small>
         </div>
         <button id="closeFolderBtn" type="button" class="btn btn-sm">✕ Đóng</button>
@@ -1141,9 +1245,9 @@
           <button id="adminLogoutBtn" type="button" class="btn btn-danger btn-sm">Đăng xuất</button>
         </div>
 
-        <!-- FORM TẠO / SỬA GÓI ACC REG THEO LOẠI -->
+        <!-- FORM TẠO / SỬA GÓI ACC CỜ NHON -->
         <form id="folderForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(56,189,248,0.25);margin-bottom:18px;">
-          <h3 style="margin:0 0 12px;font-size:1rem;color:#7dd3fc;">🔥 Tạo / Sửa Gói Acc Reg &amp; Lô SLL</h3>
+          <h3 style="margin:0 0 12px;font-size:1rem;color:#7dd3fc;">🔥 Tạo / Sửa Gói Acc Cờ Nhon</h3>
           <div class="form-grid">
             <div class="form-field">
               <label for="fldCode">Mã gói / lô (*)</label>
@@ -1242,12 +1346,12 @@
 
         <!-- FORM THÊM / SỬA ACC LẺ -->
         <form id="accountForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
-          <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản chi tiết</h3>
+          <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản (Các tài khoản khác)</h3>
           <div class="form-grid">
             <div class="form-field">
-              <label for="accFolderId">Thuộc gói acc reg (tuỳ chọn)</label>
+              <label for="accFolderId">Thuộc gói acc cờ nhon (tuỳ chọn)</label>
               <select id="accFolderId" class="select">
-                <option value="">-- Không thuộc gói (Acc lẻ riêng) --</option>
+                <option value="">-- Không thuộc gói (Các tài khoản khác) --</option>
               </select>
             </div>
             <div class="form-field">
@@ -1361,6 +1465,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js?v=8"></script>
+  <script src="script.js?v=9"></script>
 </body>
 </html>
