@@ -1,5 +1,5 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (FULL - FIX DELETE REVIEWS BUG)
+   GIABAOREG.COM - SCRIPT.JS (FOLDERS / BATCHES + REVIEWS + SYNC)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
@@ -31,6 +31,7 @@ const DEFAULT_CONFIG = {
 const DEMO_ACCOUNTS = [
   {
     id: -1,
+    folder_id: null,
     code: "LQ001",
     title: "Acc Mẫu - Rank Cao Thủ (Hãy thêm acc thật trong Quản Lý Shop)",
     price: 250000,
@@ -67,20 +68,27 @@ const safeStorage = createUniversalStorage();
 let sbClient = null;
 let isSupabaseConnected = false;
 let hasReviewsTable = true;
+let hasFoldersTable = true;
 let currentUser = null;
+let foldersData = [];
 let accountsData = [];
 let reviewsData = [];
 let shopConfig = { ...DEFAULT_CONFIG };
 let currentFilter = "all";
 let currentRankFilter = "all";
+let currentFolderFilter = null;
 let currentSort = "default";
 let searchKeyword = "";
 let detailGalleryIndex = 0;
 let activeDetailAccId = null;
+let activeFolderId = null;
 let editingAccId = null;
+let editingFolderId = null;
 let onlineCount = 7;
 let selectedUploadFiles = [];
+let selectedFolderCoverFile = null;
 let isSavingAccount = false;
+let isSavingFolder = false;
 let isSubmittingReview = false;
 let realtimeTimer = null;
 
@@ -198,10 +206,26 @@ async function copyTextToClipboard(text) {
   }
 }
 
+function getContactUrl() {
+  const digits = cleanPhone(shopConfig.zalo_phone);
+  if (shopConfig.zalo && shopConfig.zalo !== "https://zalo.me/") {
+    return shopConfig.zalo;
+  }
+  if (digits) {
+    return `https://zalo.me/${digits}`;
+  }
+  return shopConfig.fb || "https://zalo.me/";
+}
+
 function buildBuySyntax(acc) {
   const code = String(acc.code || "").replace(/^#+/, "");
   const priceText = formatVND(acc.price);
   return `Chào shop, mình muốn mua acc Liên Quân mã #${code} (${acc.title}) - Giá ${priceText}. Acc này còn không shop?`;
+}
+
+function buildFolderBuySyntax(folder, qty) {
+  const totalPrice = (Number(folder.price) || 0) * qty;
+  return `Chào shop, mình muốn mua ${qty} acc thuộc lô #${folder.code} (${folder.title}) - Tạm tính ${formatVND(totalPrice)}. Shop hỗ trợ giao acc giúp mình nhé!`;
 }
 
 function loadLocalReviews() {
@@ -427,9 +451,27 @@ function normalizeImages(rawImages) {
   return cleaned.length > 0 ? cleaned : [FALLBACK_IMG];
 }
 
+function normalizeFolderRow(row) {
+  const imgs = normalizeImages(row.cover_image);
+  return {
+    id: Number(row.id),
+    code: String(row.code || "LO").trim(),
+    title: String(row.title || "Lô tài khoản").trim(),
+    price: Number(row.price) || 0,
+    rank: String(row.rank || "Acc reg").trim(),
+    heroes: Number(row.heroes) || 0,
+    skins: Number(row.skins) || 0,
+    info: String(row.info || "Trắng thông tin").trim(),
+    max_per_order: Math.max(1, Number(row.max_per_order) || 10),
+    cover_image: imgs[0] || FALLBACK_IMG,
+    description: String(row.description || "").trim()
+  };
+}
+
 function normalizeAccountRow(row) {
   return {
     id: Number(row.id),
+    folder_id: row.folder_id !== null && row.folder_id !== undefined ? Number(row.folder_id) : null,
     code: String(row.code || "LQ").trim(),
     title: String(row.title || "Tài khoản Liên Quân").trim(),
     price: Number(row.price) || 0,
@@ -443,6 +485,471 @@ function normalizeAccountRow(row) {
     created_at: row.created_at || null,
     _isDemo: false
   };
+}
+
+function getFolderAvailableCount(folderId) {
+  return accountsData.filter(
+    (a) => !a._isDemo && !a.sold && Number(a.folder_id) === Number(folderId)
+  ).length;
+}
+
+function getFolderAllAccounts(folderId) {
+  return accountsData.filter(
+    (a) => !a._isDemo && Number(a.folder_id) === Number(folderId)
+  );
+}
+
+function renderFolderSelectOptions() {
+  const sel = document.getElementById("accFolderId");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML =
+    `<option value="">-- Không thuộc thư mục (Acc lẻ) --</option>` +
+    foldersData
+      .map(
+        (f) =>
+          `<option value="${f.id}">[${escapeHtml(f.code)}] ${escapeHtml(f.title)} (Còn ${getFolderAvailableCount(f.id)})</option>`
+      )
+      .join("");
+  if (prev) sel.value = prev;
+}
+
+function renderFolders() {
+  const grid = document.getElementById("foldersGrid");
+  if (!grid) return;
+
+  if (!foldersData.length) {
+    grid.innerHTML = `
+      <div class="rgb-frame" style="grid-column:1/-1;text-align:center;padding:24px 16px;color:#94a3b8;">
+        Chưa có thư mục / lô acc nào. Mở <b>Quản Lý Shop</b> để tạo lô và nhập số lượng lớn acc cùng loại.
+      </div>
+    `;
+    renderFolderSelectOptions();
+    return;
+  }
+
+  grid.innerHTML = foldersData
+    .map((f) => {
+      const avail = getFolderAvailableCount(f.id);
+      const isSelected = Number(currentFolderFilter) === Number(f.id);
+      return `
+        <article class="folder-card rgb-frame" style="${isSelected ? "outline:2px solid #38bdf8;" : ""}">
+          <div class="folder-thumb" onclick="openFolderModal(${f.id})">
+            <img
+              src="${escapeHtml(f.cover_image || FALLBACK_IMG)}"
+              alt="${escapeHtml(f.title)}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
+            />
+            <span class="folder-code">${escapeHtml(f.code)}</span>
+            <span class="folder-stock-pill">Còn lại: ${avail}</span>
+          </div>
+          <div class="folder-body">
+            <h3 class="folder-title" onclick="openFolderModal(${f.id})">${escapeHtml(f.title)}</h3>
+            <div class="folder-badges">
+              <span class="folder-badge">${escapeHtml(f.info)}</span>
+              <span class="folder-badge">Tối đa ${f.max_per_order}/lần</span>
+              <span class="folder-badge">Rank: ${escapeHtml(f.rank)}</span>
+            </div>
+            <div class="acc-footer">
+              <span class="acc-price">${formatVND(f.price)}</span>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="btn btn-sm" onclick="filterByFolder(${f.id})">${
+        isSelected ? "Bỏ lọc" : "Lọc acc"
+      }</button>
+                <button type="button" class="btn-detail" onclick="openFolderModal(${f.id})">Mở lô</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  renderFolderSelectOptions();
+}
+
+function filterByFolder(folderId) {
+  if (Number(currentFolderFilter) === Number(folderId)) {
+    currentFolderFilter = null;
+  } else {
+    currentFolderFilter = Number(folderId);
+  }
+  const banner = document.getElementById("activeFolderBanner");
+  if (banner) {
+    const f = foldersData.find((item) => Number(item.id) === Number(currentFolderFilter));
+    banner.textContent = f ? `Đang lọc theo lô: [${f.code}] ${f.title}` : "";
+  }
+  renderFolders();
+  renderAccounts();
+}
+
+function openFolderModal(folderId) {
+  const folder = foldersData.find((item) => Number(item.id) === Number(folderId));
+  if (!folder) return;
+  activeFolderId = folder.id;
+
+  const modal = document.getElementById("folderModal");
+  if (!modal) return;
+
+  const avail = getFolderAvailableCount(folder.id);
+  const items = getFolderAllAccounts(folder.id);
+
+  const titleEl = document.getElementById("folderModalTitle");
+  const metaEl = document.getElementById("folderModalMeta");
+  const imgEl = document.getElementById("folderModalImg");
+  const descEl = document.getElementById("folderModalDesc");
+  const priceEl = document.getElementById("folderModalPrice");
+  const limitEl = document.getElementById("folderModalLimit");
+  const qtyInput = document.getElementById("folderBuyQty");
+  const buyBtn = document.getElementById("folderBuyBtn");
+  const countEl = document.getElementById("folderModalCount");
+  const listEl = document.getElementById("folderAccountsList");
+
+  if (titleEl) titleEl.textContent = folder.title;
+  if (metaEl) {
+    metaEl.textContent = `Mã lô: ${folder.code} • Còn lại: ${avail} acc • ${folder.info}`;
+  }
+  if (imgEl) {
+    imgEl.onerror = () => {
+      imgEl.onerror = null;
+      imgEl.src = FALLBACK_IMG;
+    };
+    imgEl.src = folder.cover_image || FALLBACK_IMG;
+  }
+  if (descEl) {
+    descEl.textContent =
+      folder.description || `Rank: ${folder.rank} • Tướng: ${folder.heroes} • Skin: ${folder.skins}`;
+  }
+  if (priceEl) priceEl.textContent = formatVND(folder.price);
+  if (limitEl) limitEl.textContent = `Tối đa ${folder.max_per_order} acc / lần`;
+
+  const maxAllowed = Math.max(1, Math.min(folder.max_per_order, avail || folder.max_per_order));
+  if (qtyInput) {
+    qtyInput.min = "1";
+    qtyInput.max = String(maxAllowed);
+    qtyInput.value = "1";
+  }
+
+  if (buyBtn) {
+    buyBtn.disabled = avail <= 0;
+    buyBtn.textContent = avail > 0 ? "🛒 Mua theo lô" : "Hết hàng trong lô";
+    buyBtn.onclick = async () => {
+      const rawQty = Number(qtyInput?.value || 1) || 1;
+      const qty = Math.max(1, Math.min(maxAllowed, rawQty));
+      const syntax = buildFolderBuySyntax(folder, qty);
+      const copied = await copyTextToClipboard(syntax);
+      if (copied) {
+        showToast(`Đã sao chép cú pháp mua ${qty} acc lô #${folder.code}!`, "success");
+      } else {
+        showToast(`Cú pháp: ${syntax}`, "info");
+      }
+      window.open(getContactUrl(), "_blank", "noopener,noreferrer");
+    };
+  }
+
+  if (countEl) countEl.textContent = String(items.length);
+  if (listEl) {
+    if (!items.length) {
+      listEl.innerHTML = `<div style="grid-column:1/-1;color:#94a3b8;font-size:0.88rem;">Chưa có acc con nào được gán vào lô này.</div>`;
+    } else {
+      listEl.innerHTML = items
+        .map(
+          (acc) => `
+          <div style="background:rgba(7,11,20,0.85);border:1px solid rgba(148,163,184,0.2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>#${escapeHtml(acc.code)}</strong>
+              <span style="font-size:0.78rem;font-weight:700;color:${acc.sold ? "#f87171" : "#4ade80"};">${
+            acc.sold ? "Đã bán" : "Còn hàng"
+          }</span>
+            </div>
+            <div style="font-size:0.84rem;color:#cbd5e1;">${escapeHtml(acc.title)}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+              <span style="color:#4ade80;font-weight:700;">${formatVND(acc.price || folder.price)}</span>
+              <button type="button" class="btn btn-sm" onclick="closeFolderModal();openAccountDetail(${acc.id})">Chi tiết</button>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+    }
+  }
+
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
+}
+
+function closeFolderModal() {
+  const modal = document.getElementById("folderModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  activeFolderId = null;
+  if (!isAdminModalOpen()) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+async function uploadSingleImage(file) {
+  if (!file || !sbClient || !currentUser) return null;
+  const ext =
+    (file.name.split(".").pop() || "jpg")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "") || "jpg";
+  const filePath = `folder_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+  const { error } = await sbClient.storage.from(STORAGE_BUCKET).upload(filePath, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || "image/jpeg"
+  });
+  if (error) {
+    throw new Error("Tải ảnh lỗi: " + error.message);
+  }
+  const { data } = sbClient.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+  return data?.publicUrl || null;
+}
+
+function parseBulkAccountLines(rawText, folderObj) {
+  const lines = String(rawText || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  return lines.map((line, idx) => {
+    let code = "";
+    let secret = line;
+    if (line.includes("|")) {
+      const parts = line.split("|");
+      code = parts[0].trim();
+      secret = parts.slice(1).join("|").trim();
+    }
+    if (!code) {
+      code = `${folderObj.code}-${Date.now().toString().slice(-4)}-${idx + 1}`;
+    }
+    return {
+      folder_id: folderObj.id,
+      code,
+      title: `${folderObj.title} #${code}`,
+      price: folderObj.price,
+      rank: folderObj.rank,
+      heroes: folderObj.heroes,
+      skins: folderObj.skins,
+      info: folderObj.info,
+      images: [folderObj.cover_image || FALLBACK_IMG],
+      description: secret
+        ? `Thông tin acc: ${secret}${folderObj.description ? "\n" + folderObj.description : ""}`
+        : folderObj.description,
+      sold: false
+    };
+  });
+}
+
+function resetFolderForm() {
+  editingFolderId = null;
+  selectedFolderCoverFile = null;
+  const fileInput = document.getElementById("fldCoverFile");
+  if (fileInput) fileInput.value = "";
+  const form = document.getElementById("folderForm");
+  if (form) form.reset();
+  const btn = document.getElementById("saveFolderBtn");
+  const cancelBtn = document.getElementById("cancelFolderEditBtn");
+  if (btn) btn.textContent = "Lưu thư mục";
+  if (cancelBtn) cancelBtn.style.display = "none";
+}
+
+function startEditFolder(id) {
+  const f = foldersData.find((item) => Number(item.id) === Number(id));
+  if (!f) return;
+  editingFolderId = f.id;
+  const setVal = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.value = val;
+  };
+  setVal("fldCode", f.code);
+  setVal("fldTitle", f.title);
+  setVal("fldPrice", f.price);
+  setVal("fldMaxPerOrder", f.max_per_order);
+  setVal("fldRank", f.rank);
+  setVal("fldHeroes", f.heroes);
+  setVal("fldSkins", f.skins);
+  setVal("fldInfo", f.info);
+  setVal("fldCoverUrl", f.cover_image || "");
+  setVal("fldDesc", f.description || "");
+  setVal("fldBulkAccounts", "");
+
+  const btn = document.getElementById("saveFolderBtn");
+  const cancelBtn = document.getElementById("cancelFolderEditBtn");
+  if (btn) btn.textContent = `Cập nhật lô ${f.code}`;
+  if (cancelBtn) cancelBtn.style.display = "inline-flex";
+}
+
+async function handleSaveFolder(e) {
+  e.preventDefault();
+  if (isSavingFolder) return;
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin trước khi lưu thư mục.", "warning");
+    return;
+  }
+  if (!hasFoldersTable) {
+    showToast("Chưa tạo bảng account_folders trên Supabase. Hãy chạy SQL ở trên.", "warning");
+    return;
+  }
+
+  const getVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
+
+  const code = getVal("fldCode");
+  const title = getVal("fldTitle");
+  if (!code || !title) {
+    showToast("Mã lô và tên lô không được để trống.", "warning");
+    return;
+  }
+
+  isSavingFolder = true;
+  const btn = document.getElementById("saveFolderBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    let coverUrl = getVal("fldCoverUrl");
+    if (selectedFolderCoverFile) {
+      const uploaded = await uploadSingleImage(selectedFolderCoverFile);
+      if (uploaded) coverUrl = uploaded;
+    }
+    const cleanCover = normalizeImages(coverUrl)[0] || FALLBACK_IMG;
+
+    const payload = {
+      code,
+      title,
+      price: getNum("fldPrice"),
+      max_per_order: Math.max(1, getNum("fldMaxPerOrder") || 10),
+      rank: getVal("fldRank") || "Acc reg",
+      heroes: getNum("fldHeroes"),
+      skins: getNum("fldSkins"),
+      info: getVal("fldInfo") || "Trắng thông tin",
+      cover_image: cleanCover,
+      description: getVal("fldDesc")
+    };
+
+    let savedFolderRow = null;
+    if (editingFolderId !== null) {
+      const { data, error } = await sbClient
+        .from("account_folders")
+        .update(payload)
+        .eq("id", editingFolderId)
+        .select()
+        .single();
+      if (error) {
+        showToast("Cập nhật lô lỗi: " + error.message, "error");
+        return;
+      }
+      savedFolderRow = data;
+    } else {
+      const { data, error } = await sbClient
+        .from("account_folders")
+        .insert([payload])
+        .select()
+        .single();
+      if (error) {
+        showToast("Tạo lô lỗi: " + error.message, "error");
+        return;
+      }
+      savedFolderRow = data;
+    }
+
+    const bulkText = getVal("fldBulkAccounts");
+    if (bulkText && savedFolderRow) {
+      const normalizedFolder = normalizeFolderRow(savedFolderRow);
+      const bulkRows = parseBulkAccountLines(bulkText, normalizedFolder);
+      if (bulkRows.length > 0) {
+        const { error: insErr } = await sbClient.from("accounts").insert(bulkRows);
+        if (insErr) {
+          showToast("Đã lưu lô nhưng thêm danh sách acc lỗi: " + insErr.message, "warning");
+        } else {
+          showToast(`Đã lưu lô và thêm ${bulkRows.length} acc vào lô!`, "success");
+        }
+      }
+    } else {
+      showToast("Đã lưu thư mục / lô acc!", "success");
+    }
+
+    resetFolderForm();
+    await Promise.all([fetchFolders(), fetchAccounts(true, true)]);
+  } finally {
+    isSavingFolder = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function deleteFolder(id) {
+  if (!currentUser || !sbClient) return;
+  const f = foldersData.find((item) => Number(item.id) === Number(id));
+  if (!f) return;
+  if (!confirm(`Xóa thư mục [${f.code}] ${f.title}? (Các acc bên trong vẫn giữ lại thành acc lẻ)`)) return;
+
+  const { error } = await sbClient.from("account_folders").delete().eq("id", Number(id));
+  if (error) {
+    showToast("Xóa thư mục lỗi: " + error.message, "error");
+    return;
+  }
+  if (Number(currentFolderFilter) === Number(id)) {
+    currentFolderFilter = null;
+  }
+  showToast("Đã xóa thư mục.", "success");
+  await Promise.all([fetchFolders(), fetchAccounts(true, true)]);
+}
+
+function renderAdminFoldersTable() {
+  const tbody = document.getElementById("adminFoldersBody");
+  if (!tbody) return;
+  if (!foldersData.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Chưa có thư mục nào.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = foldersData
+    .map(
+      (f) => `
+      <tr>
+        <td><b>${escapeHtml(f.code)}</b></td>
+        <td>${escapeHtml(f.title)}</td>
+        <td><b>${getFolderAvailableCount(f.id)}</b></td>
+        <td>${formatVND(f.price)}</td>
+        <td style="white-space:nowrap;display:flex;gap:6px;">
+          <button type="button" class="btn btn-sm" onclick="startEditFolder(${f.id})">Sửa</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteFolder(${f.id})">Xóa</button>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+async function fetchFolders() {
+  if (!sbClient || !hasFoldersTable) {
+    foldersData = [];
+    renderFolders();
+    renderAdminFoldersTable();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from("account_folders")
+      .select("*")
+      .order("id", { ascending: false });
+    if (error) {
+      hasFoldersTable = false;
+      foldersData = [];
+      renderFolders();
+      renderAdminFoldersTable();
+      return;
+    }
+    foldersData = Array.isArray(data) ? data.map(normalizeFolderRow) : [];
+    renderFolders();
+    renderAdminFoldersTable();
+  } catch {
+    foldersData = [];
+    renderFolders();
+    renderAdminFoldersTable();
+  }
 }
 
 function renderUploadPreviews() {
@@ -611,13 +1118,14 @@ async function fetchShopConfig() {
 }
 
 async function fetchAccounts(notifyError = false, forceRender = false) {
-  if (!forceRender && (isAdminModalOpen() || isSavingAccount)) {
+  if (!forceRender && (isAdminModalOpen() || isSavingAccount || isSavingFolder)) {
     return;
   }
 
   if (!sbClient) {
     isSupabaseConnected = false;
     accountsData = [...DEMO_ACCOUNTS];
+    renderFolders();
     renderAccounts();
     renderAdminTable();
     updateStats();
@@ -638,6 +1146,7 @@ async function fetchAccounts(notifyError = false, forceRender = false) {
       if (!isSupabaseConnected && accountsData.length === 0) {
         accountsData = [...DEMO_ACCOUNTS];
       }
+      renderFolders();
       renderAccounts();
       renderAdminTable();
       updateStats();
@@ -647,6 +1156,7 @@ async function fetchAccounts(notifyError = false, forceRender = false) {
     isSupabaseConnected = true;
     const rows = Array.isArray(data) ? data.map(normalizeAccountRow) : [];
     accountsData = rows.length > 0 ? rows : currentUser ? [] : [...DEMO_ACCOUNTS];
+    renderFolders();
     renderAccounts();
     renderAdminTable();
     updateStats();
@@ -675,6 +1185,10 @@ function updateStats() {
 
 function getFilteredAccounts() {
   let list = [...accountsData];
+
+  if (currentFolderFilter !== null) {
+    list = list.filter((a) => Number(a.folder_id) === Number(currentFolderFilter));
+  }
 
   if (currentFilter === "available") {
     list = list.filter((a) => !a.sold);
@@ -853,20 +1367,12 @@ function openAccountDetail(id) {
       buyBtn.onclick = async () => {
         const syntax = buildBuySyntax(acc);
         const copied = await copyTextToClipboard(syntax);
-        const digits = cleanPhone(shopConfig.zalo_phone);
-        const contactTarget =
-          shopConfig.zalo && shopConfig.zalo !== "https://zalo.me/"
-            ? shopConfig.zalo
-            : digits
-            ? `https://zalo.me/${digits}`
-            : shopConfig.fb || "https://zalo.me/";
-
         if (copied) {
           showToast(`Đã sao chép cú pháp mua acc #${acc.code}! Dán tin nhắn để gửi shop.`, "success");
         } else {
           showToast(`Cú pháp: ${syntax}`, "info");
         }
-        window.open(contactTarget, "_blank", "noopener,noreferrer");
+        window.open(getContactUrl(), "_blank", "noopener,noreferrer");
       };
     }
   }
@@ -880,7 +1386,7 @@ function closeDetailModal() {
   if (!modal) return;
   modal.style.display = "none";
   activeDetailAccId = null;
-  if (!isAdminModalOpen()) {
+  if (!isAdminModalOpen() && !activeFolderId) {
     document.body.classList.remove("modal-open");
   }
 }
@@ -923,6 +1429,8 @@ async function openAdminModal() {
     }
   }
   syncAuthUI();
+  renderFolderSelectOptions();
+  renderAdminFoldersTable();
   renderAdminTable();
   applyShopConfigToUI();
 }
@@ -965,7 +1473,7 @@ async function handleAdminLogin(e) {
     currentUser = data?.user || null;
     if (passInput) passInput.value = "";
     syncAuthUI();
-    await Promise.all([fetchShopConfig(), fetchAccounts(true, true), fetchReviews()]);
+    await Promise.all([fetchShopConfig(), fetchFolders(), fetchAccounts(true, true), fetchReviews()]);
     showToast("Đăng nhập quản trị thành công!", "success");
   } catch (err) {
     showToast("Lỗi kết nối khi đăng nhập: " + (err?.message || err), "error");
@@ -980,6 +1488,7 @@ async function handleAdminLogout() {
   }
   currentUser = null;
   resetAccountForm();
+  resetFolderForm();
   syncAuthUI();
   await fetchAccounts(false, true);
   showToast("Đã đăng xuất khỏi phiên quản trị.", "info");
@@ -1018,6 +1527,7 @@ function startEditAccount(id) {
     if (el) el.value = val;
   };
 
+  setVal("accFolderId", acc.folder_id ? String(acc.folder_id) : "");
   setVal("accCode", acc.code);
   setVal("accTitle", acc.title);
   setVal("accPrice", acc.price);
@@ -1085,7 +1595,11 @@ async function handleSaveAccount(e) {
         ? [...uploadedUrls, ...manualImgs]
         : normalizeImages(getVal("accImages"));
 
+    const rawFolderId = getVal("accFolderId");
+    const folderId = rawFolderId ? Number(rawFolderId) : null;
+
     const payload = {
+      folder_id: folderId,
       code,
       title,
       price: getNum("accPrice"),
@@ -1273,7 +1787,7 @@ function renderAdminTable() {
 function scheduleRealtimeRefresh(fn) {
   if (realtimeTimer) clearTimeout(realtimeTimer);
   realtimeTimer = setTimeout(() => {
-    if (!isAdminModalOpen() && !isSavingAccount) {
+    if (!isAdminModalOpen() && !isSavingAccount && !isSavingFolder) {
       fn();
     }
   }, 600);
@@ -1291,6 +1805,13 @@ function subscribeRealtime() {
           { event: "*", schema: "public", table: "accounts" },
           () => {
             scheduleRealtimeRefresh(() => fetchAccounts(false, false));
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "account_folders" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchFolders());
           }
         )
         .on(
@@ -1314,16 +1835,18 @@ function subscribeRealtime() {
   }
 
   setInterval(() => {
-    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount) {
+    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount && !isSavingFolder) {
       fetchShopConfig();
+      fetchFolders();
       fetchAccounts(false, false);
       fetchReviews();
     }
   }, 15000);
 
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount) {
+    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount && !isSavingFolder) {
       fetchShopConfig();
+      fetchFolders();
       fetchAccounts(false, false);
       fetchReviews();
     }
@@ -1349,6 +1872,13 @@ document.addEventListener("click", (e) => {
   if (closeDetail) {
     e.preventDefault();
     closeDetailModal();
+    return;
+  }
+
+  const closeFolder = e.target.closest("#closeFolderBtn");
+  if (closeFolder) {
+    e.preventDefault();
+    closeFolderModal();
     return;
   }
 
@@ -1407,10 +1937,17 @@ function bindEvents() {
     });
   }
 
+  const folderCoverInput = document.getElementById("fldCoverFile");
+  if (folderCoverInput) {
+    folderCoverInput.addEventListener("change", (e) => {
+      selectedFolderCoverFile = (e.target.files && e.target.files[0]) || null;
+    });
+  }
+
   const syncNowBtn = document.getElementById("syncNowBtn");
   if (syncNowBtn) {
     syncNowBtn.addEventListener("click", async () => {
-      await Promise.all([fetchShopConfig(), fetchAccounts(true, true), fetchReviews()]);
+      await Promise.all([fetchShopConfig(), fetchFolders(), fetchAccounts(true, true), fetchReviews()]);
       showToast("Đã đồng bộ dữ liệu mới nhất từ Supabase.", "success");
     });
   }
@@ -1420,6 +1957,12 @@ function bindEvents() {
 
   const logoutBtn = document.getElementById("adminLogoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", handleAdminLogout);
+
+  const folderForm = document.getElementById("folderForm");
+  if (folderForm) folderForm.addEventListener("submit", handleSaveFolder);
+
+  const cancelFolderEditBtn = document.getElementById("cancelFolderEditBtn");
+  if (cancelFolderEditBtn) cancelFolderEditBtn.addEventListener("click", resetFolderForm);
 
   const accForm = document.getElementById("accountForm");
   if (accForm) accForm.addEventListener("submit", handleSaveAccount);
@@ -1440,9 +1983,17 @@ function bindEvents() {
     });
   }
 
+  const folderModal = document.getElementById("folderModal");
+  if (folderModal) {
+    folderModal.addEventListener("click", (e) => {
+      if (e.target === folderModal) closeFolderModal();
+    });
+  }
+
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeDetailModal();
+      closeFolderModal();
     }
   });
 }
@@ -1453,6 +2004,7 @@ async function initApp() {
   applyShopConfigToUI();
   accountsData = [...DEMO_ACCOUNTS];
   reviewsData = loadLocalReviews();
+  renderFolders();
   renderAccounts();
   renderReviews();
   updateStats();
@@ -1473,7 +2025,7 @@ async function initApp() {
       syncAuthUI();
     });
 
-    await Promise.all([fetchShopConfig(), fetchAccounts(false, true), fetchReviews()]);
+    await Promise.all([fetchShopConfig(), fetchFolders(), fetchAccounts(false, true), fetchReviews()]);
     subscribeRealtime();
   } catch (err) {
     console.error("Lỗi khởi tạo ứng dụng:", err);
