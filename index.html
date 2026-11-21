@@ -287,6 +287,107 @@
       border: 1px solid rgba(148, 163, 184, 0.16);
     }
 
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 0 0 14px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .folders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .folder-card {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .folder-thumb {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      background: #070b14;
+      cursor: pointer;
+      overflow: hidden;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+
+    .folder-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .folder-code {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(7, 11, 20, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #fde047;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 7px;
+    }
+
+    .folder-stock-pill {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(74, 222, 128, 0.45);
+      color: #4ade80;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+
+    .folder-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .folder-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .folder-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+    }
+
+    .folder-badge {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #bae6fd;
+      padding: 3px 8px;
+      border-radius: 7px;
+      font-weight: 600;
+    }
+
     .toolbar {
       display: flex;
       flex-direction: column;
@@ -613,7 +714,7 @@
 
     .modal-card {
       width: 100%;
-      max-width: 800px;
+      max-width: 820px;
       margin: 8px auto 32px;
       padding: 18px;
       box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
@@ -765,6 +866,17 @@
       </div>
     </section>
 
+    <div class="section-heading">
+      <h2>📁 THƯ MỤC / LÔ TÀI KHOẢN CÙNG LOẠI</h2>
+      <span style="font-size:0.84rem;color:#94a3b8;">Bấm vào từng thư mục để xem số lượng còn lại và danh sách acc bên trong</span>
+    </div>
+    <section id="foldersGrid" class="folders-grid" aria-label="Danh sách thư mục tài khoản"></section>
+
+    <div class="section-heading">
+      <h2>🎮 DANH SÁCH TÀI KHOẢN LẺ &amp; BỘ LỌC</h2>
+      <span id="activeFolderBanner" style="font-size:0.84rem;color:#38bdf8;"></span>
+    </div>
+
     <section class="toolbar rgb-frame" aria-label="Bộ lọc giá bán, bậc rank và tìm kiếm">
       <div class="toolbar-row">
         <div class="filter-group">
@@ -858,6 +970,40 @@
     </div>
   </footer>
 
+  <!-- MODAL XEM THƯ MỤC / LÔ ACC -->
+  <div id="folderModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="folderModalTitle">
+    <div class="modal-card rgb-frame">
+      <div class="modal-header">
+        <div>
+          <h2 id="folderModalTitle">Thư mục tài khoản</h2>
+          <small id="folderModalMeta" style="color:#38bdf8;"></small>
+        </div>
+        <button id="closeFolderBtn" type="button" class="btn btn-sm">✕ Đóng</button>
+      </div>
+
+      <img id="folderModalImg" src="" alt="Ảnh đại diện thư mục" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-bottom:12px;background:#070b14;" />
+
+      <div id="folderModalDesc" style="white-space:pre-line;background:rgba(7,11,20,0.8);padding:12px;border-radius:10px;margin-bottom:14px;font-size:0.9rem;"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:rgba(15,23,42,0.85);padding:12px;border-radius:12px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:0.82rem;color:#94a3b8;">Giá / acc &amp; Giới hạn:</div>
+          <strong id="folderModalPrice" style="font-size:1.2rem;color:#4ade80;"></strong>
+          <span id="folderModalLimit" style="margin-left:8px;font-size:0.84rem;color:#fde047;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <label for="folderBuyQty" style="font-size:0.85rem;">Số lượng mua:</label>
+          <input id="folderBuyQty" type="number" class="input" min="1" value="1" style="width:82px;padding:7px 10px;" />
+          <button id="folderBuyBtn" type="button" class="btn btn-primary">🛒 Mua theo lô</button>
+        </div>
+      </div>
+
+      <h3 style="margin:0 0 10px;font-size:1rem;">Danh sách acc trong thư mục (<span id="folderModalCount">0</span>)</h3>
+      <div id="folderAccountsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL CHI TIẾT ACC -->
   <div id="detailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <div class="modal-card rgb-frame">
       <div class="modal-header">
@@ -894,6 +1040,7 @@
     </div>
   </div>
 
+  <!-- MODAL QUẢN LÝ SHOP -->
   <div id="adminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
     <div class="modal-card rgb-frame">
       <div class="modal-header">
@@ -952,9 +1099,107 @@
           <button id="adminLogoutBtn" type="button" class="btn btn-danger btn-sm">Đăng xuất</button>
         </div>
 
+        <!-- FORM TẠO / SỬA THƯ MỤC ACC -->
+        <form id="folderForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(56,189,248,0.25);margin-bottom:18px;">
+          <h3 style="margin:0 0 12px;font-size:1rem;color:#7dd3fc;">📁 Tạo / Sửa Thư Mục (Lô Acc Cùng Loại)</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="fldCode">Mã lô (*)</label>
+              <input id="fldCode" type="text" class="input" placeholder="VD: LO-NAKROTH" required />
+            </div>
+            <div class="form-field">
+              <label for="fldTitle">Tên lô / loại acc (*)</label>
+              <input id="fldTitle" type="text" class="input" placeholder="VD: Nakroth Lôi Quang Sứ Vippro" required />
+            </div>
+            <div class="form-field">
+              <label for="fldPrice">Giá mỗi acc (VNĐ)</label>
+              <input id="fldPrice" type="number" class="input" min="0" step="1000" value="20000" />
+            </div>
+            <div class="form-field">
+              <label for="fldMaxPerOrder">Tối đa mua / lần</label>
+              <input id="fldMaxPerOrder" type="number" class="input" min="1" value="10" />
+            </div>
+            <div class="form-field">
+              <label for="fldRank">Bậc Rank</label>
+              <select id="fldRank" class="select">
+                <option value="Acc reg">Acc reg</option>
+                <option value="Không Rank">Không Rank</option>
+                <option value="Đồng">Đồng</option>
+                <option value="Bạc">Bạc</option>
+                <option value="Vàng">Vàng</option>
+                <option value="Bạch Kim">Bạch Kim</option>
+                <option value="Kim Cương">Kim Cương</option>
+                <option value="Tinh Anh">Tinh Anh</option>
+                <option value="Cao Thủ">Cao Thủ</option>
+                <option value="Chiến Tướng">Chiến Tướng</option>
+                <option value="Thách Đấu">Thách Đấu</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="fldHeroes">Số tướng</label>
+              <input id="fldHeroes" type="number" class="input" min="0" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="fldSkins">Số trang phục</label>
+              <input id="fldSkins" type="number" class="input" min="0" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="fldInfo">Thông tin bảo mật</label>
+              <input id="fldInfo" type="text" class="input" placeholder="VD: Trắng thông tin" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="fldCoverFile">Ảnh đại diện thư mục (chọn ảnh từ máy/điện thoại)</label>
+            <input id="fldCoverFile" type="file" class="input" accept="image/*" />
+          </div>
+
+          <div class="form-field">
+            <label for="fldCoverUrl">Hoặc dán link ảnh đại diện</label>
+            <input id="fldCoverUrl" type="text" class="input" placeholder="https://..." />
+          </div>
+
+          <div class="form-field">
+            <label for="fldDesc">Ghi chú / mô tả chung cho lô</label>
+            <textarea id="fldDesc" rows="2" class="textarea" placeholder="VD: Gắn số vào đổi mật khẩu nha..."></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="fldBulkAccounts">Nhập nhanh danh sách acc vào lô này (mỗi dòng 1 acc: <code>ma_acc|tk:mk</code> hoặc chỉ <code>tk:mk</code> — hỗ trợ dán hàng loạt)</label>
+            <textarea id="fldBulkAccounts" rows="3" class="textarea" placeholder="VD:&#10;NAK01|user1:pass1&#10;NAK02|user2:pass2"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="saveFolderBtn" type="submit" class="btn btn-primary">Lưu thư mục</button>
+            <button id="cancelFolderEditBtn" type="button" class="btn" style="display:none;">Hủy sửa lô</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã lô</th>
+                  <th>Tên lô</th>
+                  <th>Còn lại</th>
+                  <th>Giá</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="adminFoldersBody"></tbody>
+            </table>
+          </div>
+        </form>
+
+        <!-- FORM THÊM / SỬA ACC LẺ -->
         <form id="accountForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
           <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản Liên Quân</h3>
           <div class="form-grid">
+            <div class="form-field">
+              <label for="accFolderId">Thuộc thư mục (tuỳ chọn)</label>
+              <select id="accFolderId" class="select">
+                <option value="">-- Không thuộc thư mục (Acc lẻ) --</option>
+              </select>
+            </div>
             <div class="form-field">
               <label for="accCode">Mã acc (*)</label>
               <input id="accCode" type="text" class="input" placeholder="VD: LQ101" required />
@@ -1066,6 +1311,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>
