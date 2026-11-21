@@ -1,5 +1,5 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (FOLDERS / BATCHES + REVIEWS + SYNC)
+   GIABAOREG.COM - SCRIPT.JS (RETAIL & BULK TIER + BATCH IMPORT)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
@@ -131,6 +131,10 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
+function stripLeadingHashes(code) {
+  return String(code || "").replace(/^#+/, "").trim();
+}
+
 function cleanPhone(raw) {
   return String(raw || "").replace(/\D+/g, "");
 }
@@ -218,14 +222,29 @@ function getContactUrl() {
 }
 
 function buildBuySyntax(acc) {
-  const code = String(acc.code || "").replace(/^#+/, "");
+  const code = stripLeadingHashes(acc.code);
   const priceText = formatVND(acc.price);
   return `Chào shop, mình muốn mua acc Liên Quân mã #${code} (${acc.title}) - Giá ${priceText}. Acc này còn không shop?`;
 }
 
-function buildFolderBuySyntax(folder, qty) {
-  const totalPrice = (Number(folder.price) || 0) * qty;
-  return `Chào shop, mình muốn mua ${qty} acc thuộc lô #${folder.code} (${folder.title}) - Tạm tính ${formatVND(totalPrice)}. Shop hỗ trợ giao acc giúp mình nhé!`;
+function calcFolderOrderPrice(folder, qty) {
+  const unitRetail = Number(folder.price) || 0;
+  const unitBulk = Number(folder.bulk_price) > 0 ? Number(folder.bulk_price) : unitRetail;
+  const minBulk = Math.max(2, Number(folder.bulk_min_qty) || 5);
+  const isBulk = qty >= minBulk && unitBulk < unitRetail;
+  const appliedUnit = isBulk ? unitBulk : unitRetail;
+  return {
+    isBulk,
+    unitPrice: appliedUnit,
+    totalPrice: appliedUnit * qty
+  };
+}
+
+function buildFolderBuySyntax(folder, qty, isWholeLot = false) {
+  const code = stripLeadingHashes(folder.code);
+  const { isBulk, unitPrice, totalPrice } = calcFolderOrderPrice(folder, qty);
+  const modeText = isWholeLot ? "CHỐT CẢ LÔ" : isBulk ? "MUA SLL (GIÁ SỈ)" : "MUA LẺ";
+  return `Chào shop, mình muốn ${modeText} ${qty} acc thuộc gói #${code} (${folder.title}) - Đơn giá ${formatVND(unitPrice)}/acc - Tổng ${formatVND(totalPrice)}. Shop hỗ trợ giao acc giúp mình nhé!`;
 }
 
 function loadLocalReviews() {
@@ -251,7 +270,7 @@ function normalizeReviewRow(row) {
   return {
     id: row.id,
     reviewer_name: String(row.reviewer_name || "Khách hàng").trim(),
-    acc_code: String(row.acc_code || "").replace(/^#+/, "").trim(),
+    acc_code: stripLeadingHashes(row.acc_code),
     rating: starNum,
     comment: String(row.comment || "").trim(),
     created_at: row.created_at || new Date().toISOString()
@@ -349,7 +368,7 @@ async function handleCreateReview(e) {
   const submitBtn = document.getElementById("submitReviewBtn");
 
   const reviewer_name = (nameInput?.value || "").trim();
-  const acc_code = (codeInput?.value || "").replace(/^#+/, "").trim();
+  const acc_code = stripLeadingHashes(codeInput?.value);
   const rating = Math.max(1, Math.min(5, Number(ratingSelect?.value) || 5));
   const comment = (commentInput?.value || "").trim();
 
@@ -453,11 +472,15 @@ function normalizeImages(rawImages) {
 
 function normalizeFolderRow(row) {
   const imgs = normalizeImages(row.cover_image);
+  const retail = Number(row.price) || 0;
+  const bulk = Number(row.bulk_price) || 0;
   return {
     id: Number(row.id),
-    code: String(row.code || "LO").trim(),
-    title: String(row.title || "Lô tài khoản").trim(),
-    price: Number(row.price) || 0,
+    code: stripLeadingHashes(row.code || "REG"),
+    title: String(row.title || "Gói Acc Reg").trim(),
+    price: retail,
+    bulk_price: bulk > 0 ? bulk : retail,
+    bulk_min_qty: Math.max(2, Number(row.bulk_min_qty) || 5),
     rank: String(row.rank || "Acc reg").trim(),
     heroes: Number(row.heroes) || 0,
     skins: Number(row.skins) || 0,
@@ -472,7 +495,7 @@ function normalizeAccountRow(row) {
   return {
     id: Number(row.id),
     folder_id: row.folder_id !== null && row.folder_id !== undefined ? Number(row.folder_id) : null,
-    code: String(row.code || "LQ").trim(),
+    code: stripLeadingHashes(row.code || "LQ"),
     title: String(row.title || "Tài khoản Liên Quân").trim(),
     price: Number(row.price) || 0,
     rank: String(row.rank || "Acc reg").trim(),
@@ -504,7 +527,7 @@ function renderFolderSelectOptions() {
   if (!sel) return;
   const prev = sel.value;
   sel.innerHTML =
-    `<option value="">-- Không thuộc thư mục (Acc lẻ) --</option>` +
+    `<option value="">-- Không thuộc gói (Acc lẻ riêng) --</option>` +
     foldersData
       .map(
         (f) =>
@@ -521,7 +544,7 @@ function renderFolders() {
   if (!foldersData.length) {
     grid.innerHTML = `
       <div class="rgb-frame" style="grid-column:1/-1;text-align:center;padding:24px 16px;color:#94a3b8;">
-        Chưa có thư mục / lô acc nào. Mở <b>Quản Lý Shop</b> để tạo lô và nhập số lượng lớn acc cùng loại.
+        Chưa có gói acc reg nào. Mở <b>Quản Lý Shop</b> để tạo gói theo loại và nhập hàng loạt acc cùng giá.
       </div>
     `;
     renderFolderSelectOptions();
@@ -532,6 +555,7 @@ function renderFolders() {
     .map((f) => {
       const avail = getFolderAvailableCount(f.id);
       const isSelected = Number(currentFolderFilter) === Number(f.id);
+      const hasDiscount = f.bulk_price > 0 && f.bulk_price < f.price;
       return `
         <article class="folder-card rgb-frame" style="${isSelected ? "outline:2px solid #38bdf8;" : ""}">
           <div class="folder-thumb" onclick="openFolderModal(${f.id})">
@@ -541,7 +565,7 @@ function renderFolders() {
               loading="lazy"
               onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
             />
-            <span class="folder-code">${escapeHtml(f.code)}</span>
+            <span class="folder-code">#${escapeHtml(f.code)}</span>
             <span class="folder-stock-pill">Còn lại: ${avail}</span>
           </div>
           <div class="folder-body">
@@ -551,14 +575,21 @@ function renderFolders() {
               <span class="folder-badge">Tối đa ${f.max_per_order}/lần</span>
               <span class="folder-badge">Rank: ${escapeHtml(f.rank)}</span>
             </div>
-            <div class="acc-footer">
-              <span class="acc-price">${formatVND(f.price)}</span>
-              <div style="display:flex;gap:6px;">
-                <button type="button" class="btn btn-sm" onclick="filterByFolder(${f.id})">${
-        isSelected ? "Bỏ lọc" : "Lọc acc"
-      }</button>
-                <button type="button" class="btn-detail" onclick="openFolderModal(${f.id})">Mở lô</button>
+            <div class="price-tier-box">
+              <div class="price-tier-item">
+                <span>Mua lẻ (1 acc)</span>
+                <strong style="color:#4ade80;">${formatVND(f.price)}</strong>
               </div>
+              <div class="price-tier-item">
+                <span>${hasDiscount ? `Cả lô / Từ ${f.bulk_min_qty} acc` : "Giá mua lô"}</span>
+                <strong style="color:#fbbf24;">${formatVND(f.bulk_price)}/acc</strong>
+              </div>
+            </div>
+            <div class="acc-footer">
+              <button type="button" class="btn btn-sm" onclick="filterByFolder(${f.id})">${
+        isSelected ? "Bỏ lọc" : "Xem danh sách"
+      }</button>
+              <button type="button" class="btn-detail" onclick="openFolderModal(${f.id})">Mua lẻ / Cả lô</button>
             </div>
           </div>
         </article>
@@ -578,7 +609,7 @@ function filterByFolder(folderId) {
   const banner = document.getElementById("activeFolderBanner");
   if (banner) {
     const f = foldersData.find((item) => Number(item.id) === Number(currentFolderFilter));
-    banner.textContent = f ? `Đang lọc theo lô: [${f.code}] ${f.title}` : "";
+    banner.textContent = f ? `Đang lọc theo gói: [${f.code}] ${f.title}` : "";
   }
   renderFolders();
   renderAccounts();
@@ -599,16 +630,19 @@ function openFolderModal(folderId) {
   const metaEl = document.getElementById("folderModalMeta");
   const imgEl = document.getElementById("folderModalImg");
   const descEl = document.getElementById("folderModalDesc");
-  const priceEl = document.getElementById("folderModalPrice");
-  const limitEl = document.getElementById("folderModalLimit");
+  const retailEl = document.getElementById("folderModalRetailPrice");
+  const bulkLabelEl = document.getElementById("folderModalBulkLabel");
+  const bulkEl = document.getElementById("folderModalBulkPrice");
   const qtyInput = document.getElementById("folderBuyQty");
+  const totalCalcEl = document.getElementById("folderModalTotalCalc");
   const buyBtn = document.getElementById("folderBuyBtn");
+  const buyAllBtn = document.getElementById("folderBuyAllBtn");
   const countEl = document.getElementById("folderModalCount");
   const listEl = document.getElementById("folderAccountsList");
 
   if (titleEl) titleEl.textContent = folder.title;
   if (metaEl) {
-    metaEl.textContent = `Mã lô: ${folder.code} • Còn lại: ${avail} acc • ${folder.info}`;
+    metaEl.textContent = `Mã gói: #${folder.code} • Còn lại: ${avail} acc • ${folder.info}`;
   }
   if (imgEl) {
     imgEl.onerror = () => {
@@ -621,26 +655,55 @@ function openFolderModal(folderId) {
     descEl.textContent =
       folder.description || `Rank: ${folder.rank} • Tướng: ${folder.heroes} • Skin: ${folder.skins}`;
   }
-  if (priceEl) priceEl.textContent = formatVND(folder.price);
-  if (limitEl) limitEl.textContent = `Tối đa ${folder.max_per_order} acc / lần`;
+  if (retailEl) retailEl.textContent = formatVND(folder.price);
+  if (bulkLabelEl) {
+    bulkLabelEl.textContent = `Mua cả lô / Từ ${folder.bulk_min_qty} acc`;
+  }
+  if (bulkEl) bulkEl.textContent = `${formatVND(folder.bulk_price)}/acc`;
 
-  const maxAllowed = Math.max(1, Math.min(folder.max_per_order, avail || folder.max_per_order));
+  const maxAllowed = Math.max(1, avail || folder.max_per_order);
+  const updateOrderPreview = () => {
+    const rawQty = Number(qtyInput?.value || 1) || 1;
+    const qty = Math.max(1, Math.min(maxAllowed, rawQty));
+    const { isBulk, totalPrice } = calcFolderOrderPrice(folder, qty);
+    if (totalCalcEl) {
+      totalCalcEl.textContent = `= ${formatVND(totalPrice)}${isBulk ? " (Áp dụng giá sỉ)" : ""}`;
+    }
+  };
+
   if (qtyInput) {
     qtyInput.min = "1";
     qtyInput.max = String(maxAllowed);
     qtyInput.value = "1";
+    qtyInput.oninput = updateOrderPreview;
   }
+  updateOrderPreview();
 
   if (buyBtn) {
     buyBtn.disabled = avail <= 0;
-    buyBtn.textContent = avail > 0 ? "🛒 Mua theo lô" : "Hết hàng trong lô";
+    buyBtn.textContent = avail > 0 ? "🛒 Mua theo số lượng" : "Hết hàng";
     buyBtn.onclick = async () => {
       const rawQty = Number(qtyInput?.value || 1) || 1;
       const qty = Math.max(1, Math.min(maxAllowed, rawQty));
-      const syntax = buildFolderBuySyntax(folder, qty);
+      const syntax = buildFolderBuySyntax(folder, qty, false);
       const copied = await copyTextToClipboard(syntax);
       if (copied) {
-        showToast(`Đã sao chép cú pháp mua ${qty} acc lô #${folder.code}!`, "success");
+        showToast(`Đã sao chép cú pháp mua ${qty} acc gói #${folder.code}!`, "success");
+      } else {
+        showToast(`Cú pháp: ${syntax}`, "info");
+      }
+      window.open(getContactUrl(), "_blank", "noopener,noreferrer");
+    };
+  }
+
+  if (buyAllBtn) {
+    buyAllBtn.disabled = avail <= 0;
+    buyAllBtn.textContent = avail > 0 ? `🔥 Chốt cả lô (${avail} acc)` : "Đã hết lô";
+    buyAllBtn.onclick = async () => {
+      const syntax = buildFolderBuySyntax(folder, avail, true);
+      const copied = await copyTextToClipboard(syntax);
+      if (copied) {
+        showToast(`Đã sao chép cú pháp chốt cả lô ${avail} acc #${folder.code}!`, "success");
       } else {
         showToast(`Cú pháp: ${syntax}`, "info");
       }
@@ -651,7 +714,7 @@ function openFolderModal(folderId) {
   if (countEl) countEl.textContent = String(items.length);
   if (listEl) {
     if (!items.length) {
-      listEl.innerHTML = `<div style="grid-column:1/-1;color:#94a3b8;font-size:0.88rem;">Chưa có acc con nào được gán vào lô này.</div>`;
+      listEl.innerHTML = `<div style="grid-column:1/-1;color:#94a3b8;font-size:0.88rem;">Chưa có acc con nào được gán vào gói này.</div>`;
     } else {
       listEl.innerHTML = items
         .map(
@@ -719,7 +782,7 @@ function parseBulkAccountLines(rawText, folderObj) {
     let secret = line;
     if (line.includes("|")) {
       const parts = line.split("|");
-      code = parts[0].trim();
+      code = stripLeadingHashes(parts[0]);
       secret = parts.slice(1).join("|").trim();
     }
     if (!code) {
@@ -752,7 +815,7 @@ function resetFolderForm() {
   if (form) form.reset();
   const btn = document.getElementById("saveFolderBtn");
   const cancelBtn = document.getElementById("cancelFolderEditBtn");
-  if (btn) btn.textContent = "Lưu thư mục";
+  if (btn) btn.textContent = "Lưu gói acc";
   if (cancelBtn) cancelBtn.style.display = "none";
 }
 
@@ -767,6 +830,8 @@ function startEditFolder(id) {
   setVal("fldCode", f.code);
   setVal("fldTitle", f.title);
   setVal("fldPrice", f.price);
+  setVal("fldBulkPrice", f.bulk_price);
+  setVal("fldBulkMinQty", f.bulk_min_qty);
   setVal("fldMaxPerOrder", f.max_per_order);
   setVal("fldRank", f.rank);
   setVal("fldHeroes", f.heroes);
@@ -778,7 +843,7 @@ function startEditFolder(id) {
 
   const btn = document.getElementById("saveFolderBtn");
   const cancelBtn = document.getElementById("cancelFolderEditBtn");
-  if (btn) btn.textContent = `Cập nhật lô ${f.code}`;
+  if (btn) btn.textContent = `Cập nhật gói ${f.code}`;
   if (cancelBtn) cancelBtn.style.display = "inline-flex";
 }
 
@@ -786,7 +851,7 @@ async function handleSaveFolder(e) {
   e.preventDefault();
   if (isSavingFolder) return;
   if (!currentUser || !sbClient) {
-    showToast("Cần đăng nhập Admin trước khi lưu thư mục.", "warning");
+    showToast("Cần đăng nhập Admin trước khi lưu gói acc.", "warning");
     return;
   }
   if (!hasFoldersTable) {
@@ -797,10 +862,10 @@ async function handleSaveFolder(e) {
   const getVal = (id) => (document.getElementById(id)?.value || "").trim();
   const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
 
-  const code = getVal("fldCode");
+  const code = stripLeadingHashes(getVal("fldCode"));
   const title = getVal("fldTitle");
   if (!code || !title) {
-    showToast("Mã lô và tên lô không được để trống.", "warning");
+    showToast("Mã gói và tên loại acc không được để trống.", "warning");
     return;
   }
 
@@ -815,11 +880,15 @@ async function handleSaveFolder(e) {
       if (uploaded) coverUrl = uploaded;
     }
     const cleanCover = normalizeImages(coverUrl)[0] || FALLBACK_IMG;
+    const retailPrice = getNum("fldPrice");
+    const bulkPrice = getNum("fldBulkPrice") || retailPrice;
 
     const payload = {
       code,
       title,
-      price: getNum("fldPrice"),
+      price: retailPrice,
+      bulk_price: bulkPrice,
+      bulk_min_qty: Math.max(2, getNum("fldBulkMinQty") || 5),
       max_per_order: Math.max(1, getNum("fldMaxPerOrder") || 10),
       rank: getVal("fldRank") || "Acc reg",
       heroes: getNum("fldHeroes"),
@@ -831,25 +900,50 @@ async function handleSaveFolder(e) {
 
     let savedFolderRow = null;
     if (editingFolderId !== null) {
-      const { data, error } = await sbClient
+      let { data, error } = await sbClient
         .from("account_folders")
         .update(payload)
         .eq("id", editingFolderId)
         .select()
         .single();
+      if (error && /bulk_price|bulk_min_qty/i.test(error.message)) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.bulk_price;
+        delete fallbackPayload.bulk_min_qty;
+        const retry = await sbClient
+          .from("account_folders")
+          .update(fallbackPayload)
+          .eq("id", editingFolderId)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
       if (error) {
-        showToast("Cập nhật lô lỗi: " + error.message, "error");
+        showToast("Cập nhật gói lỗi: " + error.message, "error");
         return;
       }
       savedFolderRow = data;
     } else {
-      const { data, error } = await sbClient
+      let { data, error } = await sbClient
         .from("account_folders")
         .insert([payload])
         .select()
         .single();
+      if (error && /bulk_price|bulk_min_qty/i.test(error.message)) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.bulk_price;
+        delete fallbackPayload.bulk_min_qty;
+        const retry = await sbClient
+          .from("account_folders")
+          .insert([fallbackPayload])
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
       if (error) {
-        showToast("Tạo lô lỗi: " + error.message, "error");
+        showToast("Tạo gói lỗi: " + error.message, "error");
         return;
       }
       savedFolderRow = data;
@@ -862,13 +956,13 @@ async function handleSaveFolder(e) {
       if (bulkRows.length > 0) {
         const { error: insErr } = await sbClient.from("accounts").insert(bulkRows);
         if (insErr) {
-          showToast("Đã lưu lô nhưng thêm danh sách acc lỗi: " + insErr.message, "warning");
+          showToast("Đã lưu gói nhưng thêm danh sách acc lỗi: " + insErr.message, "warning");
         } else {
-          showToast(`Đã lưu lô và thêm ${bulkRows.length} acc vào lô!`, "success");
+          showToast(`Đã lưu gói và thêm ${bulkRows.length} acc vào gói!`, "success");
         }
       }
     } else {
-      showToast("Đã lưu thư mục / lô acc!", "success");
+      showToast("Đã lưu gói acc reg!", "success");
     }
 
     resetFolderForm();
@@ -883,17 +977,17 @@ async function deleteFolder(id) {
   if (!currentUser || !sbClient) return;
   const f = foldersData.find((item) => Number(item.id) === Number(id));
   if (!f) return;
-  if (!confirm(`Xóa thư mục [${f.code}] ${f.title}? (Các acc bên trong vẫn giữ lại thành acc lẻ)`)) return;
+  if (!confirm(`Xóa gói [${f.code}] ${f.title}? (Các acc bên trong vẫn giữ lại thành acc lẻ)`)) return;
 
   const { error } = await sbClient.from("account_folders").delete().eq("id", Number(id));
   if (error) {
-    showToast("Xóa thư mục lỗi: " + error.message, "error");
+    showToast("Xóa gói lỗi: " + error.message, "error");
     return;
   }
   if (Number(currentFolderFilter) === Number(id)) {
     currentFolderFilter = null;
   }
-  showToast("Đã xóa thư mục.", "success");
+  showToast("Đã xóa gói acc.", "success");
   await Promise.all([fetchFolders(), fetchAccounts(true, true)]);
 }
 
@@ -901,17 +995,17 @@ function renderAdminFoldersTable() {
   const tbody = document.getElementById("adminFoldersBody");
   if (!tbody) return;
   if (!foldersData.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Chưa có thư mục nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Chưa có gói acc nào.</td></tr>`;
     return;
   }
   tbody.innerHTML = foldersData
     .map(
       (f) => `
       <tr>
-        <td><b>${escapeHtml(f.code)}</b></td>
+        <td><b>#${escapeHtml(f.code)}</b></td>
         <td>${escapeHtml(f.title)}</td>
         <td><b>${getFolderAvailableCount(f.id)}</b></td>
-        <td>${formatVND(f.price)}</td>
+        <td>${formatVND(f.price)} / ${formatVND(f.bulk_price)}</td>
         <td style="white-space:nowrap;display:flex;gap:6px;">
           <button type="button" class="btn btn-sm" onclick="startEditFolder(${f.id})">Sửa</button>
           <button type="button" class="btn btn-danger btn-sm" onclick="deleteFolder(${f.id})">Xóa</button>
@@ -1571,7 +1665,7 @@ async function handleSaveAccount(e) {
   const getVal = (id) => (document.getElementById(id)?.value || "").trim();
   const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
 
-  const code = getVal("accCode");
+  const code = stripLeadingHashes(getVal("accCode"));
   const title = getVal("accTitle");
   if (!code || !title) {
     showToast("Mã acc và tiêu đề không được để trống.", "warning");
