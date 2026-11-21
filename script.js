@@ -1,5 +1,5 @@
 /* =========================================================
-   GIABAOREG.COM - SCRIPT.JS (ACC CO NHON + OTHER ACCS + CHUNG SUC)
+   GIABAOREG.COM - SCRIPT.JS (ACC CO NHON + CHUNG SUC + CAC ACC KHAC)
    ========================================================= */
 
 const SUPABASE_URL = "https://iuezvuzvnhscxkqdrccp.supabase.co";
@@ -8,7 +8,6 @@ const ADMIN_DEFAULT_EMAIL = "nguyenducminh2011nd@gmail.com";
 const STORAGE_BUCKET = "account-images";
 const LOCAL_REVIEWS_KEY = "giabaoreg_reviews_v2";
 const LOCAL_REVIEWS_INIT_KEY = "giabaoreg_reviews_initialized_v2";
-const LOCAL_SUPPORT_KEY = "giabaoreg_support_v1";
 
 const FALLBACK_IMG =
   "data:image/svg+xml;charset=UTF-8," +
@@ -28,6 +27,19 @@ const DEFAULT_CONFIG = {
   zalo: "https://zalo.me/",
   fb: "https://m.me/"
 };
+
+const DEFAULT_SUPPORT_EVENTS = [
+  {
+    id: -101,
+    title: "Chung Sức Sự Kiện Tết Liên Quân",
+    event_tag: "Tết Liên Quân",
+    price: 0,
+    slots_left: 20,
+    description: "Hỗ trợ chung sức sự kiện mùa Tết Liên Quân. Bấm nhận kèo để sao chép cú pháp và liên hệ Zalo/Messenger shop.",
+    active: true,
+    _isDemo: true
+  }
+];
 
 const DEMO_ACCOUNTS = [
   {
@@ -73,9 +85,9 @@ let hasFoldersTable = true;
 let hasSupportTable = true;
 let currentUser = null;
 let foldersData = [];
+let supportData = [];
 let accountsData = [];
 let reviewsData = [];
-let supportData = [];
 let shopConfig = { ...DEFAULT_CONFIG };
 let currentFilter = "all";
 let currentRankFilter = "all";
@@ -87,13 +99,14 @@ let activeDetailAccId = null;
 let activeFolderId = null;
 let editingAccId = null;
 let editingFolderId = null;
+let editingSupportId = null;
 let onlineCount = 7;
 let selectedUploadFiles = [];
 let selectedFolderCoverFile = null;
 let isSavingAccount = false;
 let isSavingFolder = false;
+let isSavingSupport = false;
 let isSubmittingReview = false;
-let isSubmittingSupport = false;
 let realtimeTimer = null;
 
 function createSupabaseInstance() {
@@ -248,78 +261,1364 @@ function buildFolderBuySyntax(folder, qty, isWholeLot = false) {
   const code = stripLeadingHashes(folder.code);
   const { isBulk, unitPrice, totalPrice } = calcFolderOrderPrice(folder, qty);
   const modeText = isWholeLot ? "CHỐT CẢ LÔ" : isBulk ? "MUA SLL (GIÁ SỈ)" : "MUA LẺ";
-  return `Chào shop, mình muốn ${modeText} ${qty} acc thuộc gói #${code} (${folder.title}) - Đơn giá ${formatVND(unitPrice)}/acc - Tổng ${formatVND(totalPrice)}. Shop hỗ trợ giao acc giúp mình nhé!`;
-}
-
-function loadLocalSupport() {
-  try {
-    const raw = safeStorage.getItem(LOCAL_SUPPORT_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveLocalSupport(list) {
-  try {
-    safeStorage.setItem(LOCAL_SUPPORT_KEY, JSON.stringify(list));
-  } catch {}
+  return `Chào shop, mình muốn ${modeText} ${qty} acc cờ nhon gói #${code} (${folder.title}) - Đơn giá ${formatVND(unitPrice)}/acc - Tổng ${formatVND(totalPrice)}. Shop hỗ trợ giao acc giúp mình nhé!`;
 }
 
 function normalizeSupportRow(row) {
   return {
-    id: row.id,
-    sender_name: String(row.sender_name || "Người chơi").trim(),
-    event_name: String(row.event_name || "Chung sức Tết Liên Quân").trim(),
-    link_or_code: String(row.link_or_code || "").trim(),
-    note: String(row.note || "").trim(),
-    status: String(row.status || "Đang chờ hỗ trợ").trim(),
-    created_at: row.created_at || new Date().toISOString()
+    id: Number(row.id),
+    title: String(row.title || "Hỗ trợ chung sức").trim(),
+    event_tag: String(row.event_tag || "Tết Liên Quân").trim(),
+    price: Number(row.price) || 0,
+    slots_left: Math.max(0, Number(row.slots_left) || 0),
+    description: String(row.description || "").trim(),
+    active: row.active !== false,
+    _isDemo: Boolean(row._isDemo)
   };
 }
 
-function renderSupportList() {
-  const listEl = document.getElementById("supportList");
-  if (!listEl) return;
+function renderSupportEvents() {
+  const grid = document.getElementById("supportGrid");
+  if (!grid) return;
 
-  if (!supportData.length) {
-    listEl.innerHTML = `
-      <div style="grid-column:1/-1;text-align:center;padding:18px 12px;color:#94a3b8;background:rgba(7,11,20,0.65);border-radius:12px;border:1px dashed rgba(148,163,184,0.22);">
-        Chưa có yêu cầu chung sức nào. Dán link hoặc mã chung sức ở trên để gửi hỗ trợ!
+  const list = supportData.filter((s) => s.active);
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="rgb-frame" style="grid-column:1/-1;text-align:center;padding:20px 16px;color:#94a3b8;">
+        Hiện chưa mở kèo hỗ trợ chung sức nào. Mở <b>Quản Lý Shop</b> để thêm kèo mùa Tết Liên Quân.
       </div>
     `;
     return;
   }
 
-  listEl.innerHTML = supportData
-    .slice(0, 12)
-    .map((item) => {
-      const isDone = /xong|đã hỗ trợ|hoàn tất/i.test(item.status);
+  grid.innerHTML = list
+    .map(
+      (item) => `
+      <article class="support-card rgb-frame">
+        <span class="support-tag">${escapeHtml(item.event_tag || "Tết Liên Quân")}</span>
+        <h3 class="support-title">${escapeHtml(item.title)}</h3>
+        <p class="support-desc">${escapeHtml(item.description || "Liên hệ shop để nhận hỗ trợ chung sức nhanh nhất.")}</p>
+        <div class="support-foot">
+          <div>
+            <strong style="color:#4ade80;font-size:1rem;">${item.price > 0 ? formatVND(item.price) : "Liên hệ / Miễn phí"}</strong>
+            <span style="display:block;font-size:0.78rem;color:#94a3b8;">Còn nhận: <b>${item.slots_left}</b> slot</span>
+          </div>
+          <button type="button" class="btn btn-gold btn-sm" onclick="claimSupportEvent(${item.id})">
+            🤝 Nhận hỗ trợ
+          </button>
+        </div>
+      </article>
+    `
+    )
+    .join("");
+}
+
+async function claimSupportEvent(id) {
+  const item = supportData.find((s) => Number(s.id) === Number(id));
+  if (!item) return;
+  const priceStr = item.price > 0 ? formatVND(item.price) : "báo giá/ưu đãi";
+  const syntax = `Chào shop, mình muốn đăng ký [${item.title}] (${item.event_tag}) - ${priceStr}. Shop hỗ trợ chung sức giúp mình nhé!`;
+  const copied = await copyTextToClipboard(syntax);
+  if (copied) {
+    showToast(`Đã sao chép cú pháp "${item.title}"! Dán tin nhắn để gửi shop.`, "success");
+  } else {
+    showToast(`Cú pháp: ${syntax}`, "info");
+  }
+  window.open(getContactUrl(), "_blank", "noopener,noreferrer");
+}
+
+async function fetchSupportEvents() {
+  if (!sbClient || !hasSupportTable) {
+    supportData = [...DEFAULT_SUPPORT_EVENTS];
+    renderSupportEvents();
+    renderAdminSupportTable();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from("support_events")
+      .select("*")
+      .order("id", { ascending: false });
+    if (error) {
+      hasSupportTable = false;
+      supportData = [...DEFAULT_SUPPORT_EVENTS];
+      renderSupportEvents();
+      renderAdminSupportTable();
+      return;
+    }
+    const rows = Array.isArray(data) ? data.map(normalizeSupportRow) : [];
+    supportData = rows.length > 0 ? rows : currentUser ? [] : [...DEFAULT_SUPPORT_EVENTS];
+    renderSupportEvents();
+    renderAdminSupportTable();
+  } catch {
+    supportData = [...DEFAULT_SUPPORT_EVENTS];
+    renderSupportEvents();
+    renderAdminSupportTable();
+  }
+}
+
+function resetSupportForm() {
+  editingSupportId = null;
+  const form = document.getElementById("supportForm");
+  if (form) form.reset();
+  const activeChk = document.getElementById("supActive");
+  if (activeChk) activeChk.checked = true;
+  const btn = document.getElementById("saveSupportBtn");
+  const cancelBtn = document.getElementById("cancelSupportEditBtn");
+  if (btn) btn.textContent = "Lưu kèo chung sức";
+  if (cancelBtn) cancelBtn.style.display = "none";
+}
+
+function startEditSupport(id) {
+  const item = supportData.find((s) => Number(s.id) === Number(id));
+  if (!item || item._isDemo) return;
+  editingSupportId = item.id;
+  const setVal = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.value = val;
+  };
+  setVal("supTitle", item.title);
+  setVal("supTag", item.event_tag);
+  setVal("supPrice", item.price);
+  setVal("supSlots", item.slots_left);
+  setVal("supDesc", item.description);
+  const activeChk = document.getElementById("supActive");
+  if (activeChk) activeChk.checked = Boolean(item.active);
+
+  const btn = document.getElementById("saveSupportBtn");
+  const cancelBtn = document.getElementById("cancelSupportEditBtn");
+  if (btn) btn.textContent = "Cập nhật kèo chung sức";
+  if (cancelBtn) cancelBtn.style.display = "inline-flex";
+}
+
+async function handleSaveSupport(e) {
+  e.preventDefault();
+  if (isSavingSupport) return;
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin trước khi lưu kèo chung sức.", "warning");
+    return;
+  }
+  if (!hasSupportTable) {
+    showToast("Chưa tạo bảng support_events trên Supabase. Hãy chạy SQL ở trên.", "warning");
+    return;
+  }
+
+  const getVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
+  const title = getVal("supTitle");
+  if (!title) {
+    showToast("Vui lòng nhập tên kèo hỗ trợ chung sức.", "warning");
+    return;
+  }
+
+  isSavingSupport = true;
+  const btn = document.getElementById("saveSupportBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    const payload = {
+      title,
+      event_tag: getVal("supTag") || "Tết Liên Quân",
+      price: getNum("supPrice"),
+      slots_left: Math.max(0, getNum("supSlots")),
+      description: getVal("supDesc"),
+      active: Boolean(document.getElementById("supActive")?.checked)
+    };
+
+    if (editingSupportId !== null) {
+      const { error } = await sbClient
+        .from("support_events")
+        .update(payload)
+        .eq("id", editingSupportId);
+      if (error) {
+        showToast("Cập nhật kèo lỗi: " + error.message, "error");
+        return;
+      }
+      showToast("Đã cập nhật kèo hỗ trợ chung sức!", "success");
+    } else {
+      const { error } = await sbClient.from("support_events").insert([payload]);
+      if (error) {
+        showToast("Thêm kèo lỗi: " + error.message, "error");
+        return;
+      }
+      showToast("Đã thêm kèo hỗ trợ chung sức!", "success");
+    }
+
+    resetSupportForm();
+    await fetchSupportEvents();
+  } finally {
+    isSavingSupport = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function deleteSupportEvent(id) {
+  if (!currentUser || !sbClient) return;
+  if (!confirm("Xóa kèo hỗ trợ chung sức này?")) return;
+  const { error } = await sbClient.from("support_events").delete().eq("id", Number(id));
+  if (error) {
+    showToast("Xóa kèo lỗi: " + error.message, "error");
+    return;
+  }
+  if (editingSupportId === Number(id)) resetSupportForm();
+  showToast("Đã xóa kèo hỗ trợ chung sức.", "success");
+  await fetchSupportEvents();
+}
+
+function renderAdminSupportTable() {
+  const tbody = document.getElementById("adminSupportBody");
+  if (!tbody) return;
+  const realList = supportData.filter((s) => !s._isDemo);
+  if (!realList.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Chưa có kèo chung sức nào trên Supabase.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = realList
+    .map(
+      (s) => `
+      <tr>
+        <td><b>${escapeHtml(s.title)}</b></td>
+        <td>${s.price > 0 ? formatVND(s.price) : "Miễn phí / Liên hệ"}</td>
+        <td>${s.slots_left}</td>
+        <td>${s.active ? '<span style="color:#4ade80;font-weight:700;">Đang mở</span>' : '<span style="color:#94a3b8;">Ẩn</span>'}</td>
+        <td style="white-space:nowrap;display:flex;gap:6px;">
+          <button type="button" class="btn btn-sm" onclick="startEditSupport(${s.id})">Sửa</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupportEvent(${s.id})">Xóa</button>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+function loadLocalReviews() {
+  try {
+    const raw = safeStorage.getItem(LOCAL_REVIEWS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(normalizeReviewRow) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalReviews(list) {
+  try {
+    safeStorage.setItem(LOCAL_REVIEWS_KEY, JSON.stringify(list));
+    safeStorage.setItem(LOCAL_REVIEWS_INIT_KEY, "1");
+  } catch {}
+}
+
+function normalizeReviewRow(row) {
+  const starNum = Math.max(1, Math.min(5, Number(row.rating) || 5));
+  return {
+    id: row.id,
+    reviewer_name: String(row.reviewer_name || "Khách hàng").trim(),
+    acc_code: stripLeadingHashes(row.acc_code),
+    rating: starNum,
+    comment: String(row.comment || "").trim(),
+    created_at: row.created_at || new Date().toISOString()
+  };
+}
+
+function renderReviews() {
+  const listEl = document.getElementById("reviewsList");
+  const avgEl = document.getElementById("avgRatingText");
+  const totalEl = document.getElementById("totalReviewsText");
+  if (!listEl) return;
+
+  const list = Array.isArray(reviewsData) ? reviewsData : [];
+  const total = list.length;
+  const sum = list.reduce((acc, item) => acc + (Number(item.rating) || 5), 0);
+  const avg = total > 0 ? (sum / total).toFixed(1) : "5.0";
+
+  if (avgEl) avgEl.textContent = avg;
+  if (totalEl) totalEl.textContent = String(total);
+
+  if (total === 0) {
+    listEl.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:24px 14px;color:#94a3b8;background:rgba(7,11,20,0.65);border-radius:12px;border:1px dashed rgba(148,163,184,0.22);">
+        Chưa có đánh giá nào. Hãy là người đầu tiên để lại nhận xét cho shop!
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = list
+    .map((rv) => {
+      const stars = "★".repeat(rv.rating) + "☆".repeat(5 - rv.rating);
       return `
-        <article class="support-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <strong>${escapeHtml(item.sender_name)}</strong>
-            <span class="support-status ${isDone ? "done" : ""}">${escapeHtml(item.status)}</span>
+        <article class="review-card">
+          <div class="review-top">
+            <span class="review-name">${escapeHtml(rv.reviewer_name)}</span>
+            <span class="review-stars" aria-label="${rv.rating} sao">${stars}</span>
           </div>
-          <div style="font-size:0.8rem;color:#7dd3fc;">${escapeHtml(item.event_name)}</div>
-          <div style="font-size:0.86rem;color:#f8fafc;word-break:break-all;background:rgba(15,23,42,0.85);padding:6px 8px;border-radius:8px;">
-            ${escapeHtml(item.link_or_code)}
+          ${
+            rv.acc_code
+              ? `<span class="review-acc-badge">Acc #${escapeHtml(rv.acc_code)}</span>`
+              : ""
+          }
+          <p class="review-comment">${escapeHtml(rv.comment)}</p>
+          <div class="review-foot">
+            <span>${escapeHtml(formatDateVN(rv.created_at))}</span>
+            ${
+              currentUser
+                ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteReview(${JSON.stringify(rv.id)})">Xóa</button>`
+                : ""
+            }
           </div>
-          ${item.note ? `<div style="font-size:0.82rem;color:#cbd5e1;">${escapeHtml(item.note)}</div>` : ""}
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:4px;font-size:0.75rem;color:#64748b;">
-            <span>${escapeHtml(formatDateVN(item.created_at))}</span>
-            <div style="display:flex;gap:6px;">
-              <button type="button" class="btn btn-sm" onclick="copySupportCode(${JSON.stringify(item.link_or_code)})">Copy</button>
-              ${
-                currentUser
-                  ? `<button type="button" class="btn btn-sm" onclick="toggleSupportStatus(${JSON.stringify(item.id)}, ${JSON.stringify(item.status)})">${
-                      isDone ? "Chờ" : "Xong"
-                    }</button>
-                   <button type="button" class="btn btn-danger btn-sm" onclick="deleteSupportRequest(${JSON.stringify(item.id)})">Xóa</button>`
-                  : ""
-              }
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function fetchReviews() {
+  if (!sbClient || !hasReviewsTable) {
+    reviewsData = loadLocalReviews();
+    renderReviews();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from("reviews")
+      .select("*")
+      .order("id", { ascending: false });
+
+    if (error) {
+      hasReviewsTable = false;
+      reviewsData = loadLocalReviews();
+      renderReviews();
+      return;
+    }
+
+    reviewsData = Array.isArray(data) ? data.map(normalizeReviewRow) : [];
+    renderReviews();
+  } catch {
+    reviewsData = loadLocalReviews();
+    renderReviews();
+  }
+}
+
+async function handleCreateReview(e) {
+  e.preventDefault();
+  if (isSubmittingReview) return;
+
+  const nameInput = document.getElementById("reviewName");
+  const codeInput = document.getElementById("reviewAccCode");
+  const ratingSelect = document.getElementById("reviewRating");
+  const commentInput = document.getElementById("reviewComment");
+  const submitBtn = document.getElementById("submitReviewBtn");
+
+  const reviewer_name = (nameInput?.value || "").trim();
+  const acc_code = stripLeadingHashes(codeInput?.value);
+  const rating = Math.max(1, Math.min(5, Number(ratingSelect?.value) || 5));
+  const comment = (commentInput?.value || "").trim();
+
+  if (!reviewer_name || !comment) {
+    showToast("Vui lòng nhập tên và nội dung đánh giá.", "warning");
+    return;
+  }
+
+  isSubmittingReview = true;
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const payload = { reviewer_name, acc_code, rating, comment };
+
+    if (sbClient && hasReviewsTable) {
+      const { error } = await sbClient.from("reviews").insert([payload]);
+      if (!error) {
+        if (nameInput) nameInput.value = "";
+        if (codeInput) codeInput.value = "";
+        if (commentInput) commentInput.value = "";
+        await fetchReviews();
+        showToast("Cảm ơn bạn đã gửi đánh giá!", "success");
+        return;
+      }
+      hasReviewsTable = false;
+    }
+
+    const newItem = normalizeReviewRow({
+      ...payload,
+      id: Date.now(),
+      created_at: new Date().toISOString()
+    });
+    const nextList = [newItem, ...loadLocalReviews()];
+    saveLocalReviews(nextList);
+    reviewsData = nextList;
+    renderReviews();
+
+    if (nameInput) nameInput.value = "";
+    if (codeInput) codeInput.value = "";
+    if (commentInput) commentInput.value = "";
+    showToast("Đã đăng đánh giá của bạn!", "success");
+  } finally {
+    isSubmittingReview = false;
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function deleteReview(id) {
+  if (!currentUser) {
+    showToast("Cần đăng nhập Admin để xóa đánh giá.", "warning");
+    return;
+  }
+
+  if (sbClient && hasReviewsTable) {
+    const { error } = await sbClient.from("reviews").delete().eq("id", id);
+    if (error) {
+      showToast("Xóa đánh giá lỗi: " + error.message, "error");
+      return;
+    }
+    reviewsData = reviewsData.filter((r) => String(r.id) !== String(id));
+    renderReviews();
+    showToast("Đã xóa đánh giá.", "success");
+    return;
+  }
+
+  const nextList = loadLocalReviews().filter((r) => String(r.id) !== String(id));
+  saveLocalReviews(nextList);
+  reviewsData = nextList;
+  renderReviews();
+  showToast("Đã xóa đánh giá.", "success");
+}
+
+function normalizeImages(rawImages) {
+  let list = [];
+  if (Array.isArray(rawImages)) {
+    list = rawImages;
+  } else if (typeof rawImages === "string" && rawImages.trim()) {
+    try {
+      const parsed = JSON.parse(rawImages);
+      list = Array.isArray(parsed) ? parsed : rawImages.split(/[\n,]+/);
+    } catch {
+      list = rawImages.split(/[\n,]+/);
+    }
+  }
+
+  const cleaned = list
+    .map((item) => String(item || "").trim())
+    .filter((url) => {
+      if (!url) return false;
+      if (url.startsWith("data:image/")) return true;
+      try {
+        const u = new URL(url);
+        return u.protocol === "http:" || u.protocol === "https:";
+      } catch {
+        return false;
+      }
+    });
+
+  return cleaned.length > 0 ? cleaned : [FALLBACK_IMG];
+}
+
+function normalizeFolderRow(row) {
+  const imgs = normalizeImages(row.cover_image);
+  const retail = Number(row.price) || 0;
+  const bulk = Number(row.bulk_price) || 0;
+  return {
+    id: Number(row.id),
+    code: stripLeadingHashes(row.code || "CN"),
+    title: String(row.title || "Gói Acc Cờ Nhon").trim(),
+    price: retail,
+    bulk_price: bulk > 0 ? bulk : retail,
+    bulk_min_qty: Math.max(2, Number(row.bulk_min_qty) || 5),
+    rank: String(row.rank || "Acc reg").trim(),
+    heroes: Number(row.heroes) || 0,
+    skins: Number(row.skins) || 0,
+    info: String(row.info || "Trắng thông tin").trim(),
+    max_per_order: Math.max(1, Number(row.max_per_order) || 10),
+    cover_image: imgs[0] || FALLBACK_IMG,
+    description: String(row.description || "").trim()
+  };
+}
+
+function normalizeAccountRow(row) {
+  return {
+    id: Number(row.id),
+    folder_id: row.folder_id !== null && row.folder_id !== undefined ? Number(row.folder_id) : null,
+    code: stripLeadingHashes(row.code || "LQ"),
+    title: String(row.title || "Tài khoản Liên Quân").trim(),
+    price: Number(row.price) || 0,
+    rank: String(row.rank || "Acc reg").trim(),
+    heroes: Number(row.heroes) || 0,
+    skins: Number(row.skins) || 0,
+    info: String(row.info || "Trắng thông tin").trim(),
+    images: normalizeImages(row.images),
+    description: String(row.description || "").trim(),
+    sold: Boolean(row.sold),
+    created_at: row.created_at || null,
+    _isDemo: false
+  };
+}
+
+function getFolderAvailableCount(folderId) {
+  return accountsData.filter(
+    (a) => !a._isDemo && !a.sold && Number(a.folder_id) === Number(folderId)
+  ).length;
+}
+
+function getFolderAllAccounts(folderId) {
+  return accountsData.filter(
+    (a) => !a._isDemo && Number(a.folder_id) === Number(folderId)
+  );
+}
+
+function renderFolderSelectOptions() {
+  const sel = document.getElementById("accFolderId");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML =
+    `<option value="">-- Không thuộc gói (Tài khoản khác) --</option>` +
+    foldersData
+      .map(
+        (f) =>
+          `<option value="${f.id}">[${escapeHtml(f.code)}] ${escapeHtml(f.title)} (Còn ${getFolderAvailableCount(f.id)})</option>`
+      )
+      .join("");
+  if (prev) sel.value = prev;
+}
+
+function renderFolders() {
+  const grid = document.getElementById("foldersGrid");
+  if (!grid) return;
+
+  if (!foldersData.length) {
+    grid.innerHTML = `
+      <div class="rgb-frame" style="grid-column:1/-1;text-align:center;padding:24px 16px;color:#94a3b8;">
+        Chưa có gói acc cờ nhon nào. Mở <b>Quản Lý Shop</b> để tạo gói theo loại và nhập hàng loạt acc cùng giá.
+      </div>
+    `;
+    renderFolderSelectOptions();
+    return;
+  }
+
+  grid.innerHTML = foldersData
+    .map((f) => {
+      const avail = getFolderAvailableCount(f.id);
+      const isSelected = Number(currentFolderFilter) === Number(f.id);
+      const hasDiscount = f.bulk_price > 0 && f.bulk_price < f.price;
+      return `
+        <article class="folder-card rgb-frame" style="${isSelected ? "outline:2px solid #38bdf8;" : ""}">
+          <div class="folder-thumb" onclick="openFolderModal(${f.id})">
+            <img
+              src="${escapeHtml(f.cover_image || FALLBACK_IMG)}"
+              alt="${escapeHtml(f.title)}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
+            />
+            <span class="folder-code">#${escapeHtml(f.code)}</span>
+            <span class="folder-stock-pill">Còn lại: ${avail}</span>
+          </div>
+          <div class="folder-body">
+            <h3 class="folder-title" onclick="openFolderModal(${f.id})">${escapeHtml(f.title)}</h3>
+            <div class="folder-badges">
+              <span class="folder-badge">${escapeHtml(f.info)}</span>
+              <span class="folder-badge">Tối đa ${f.max_per_order}/lần</span>
+              <span class="folder-badge">Rank: ${escapeHtml(f.rank)}</span>
+            </div>
+            <div class="price-tier-box">
+              <div class="price-tier-item">
+                <span>Mua lẻ (1 acc)</span>
+                <strong style="color:#4ade80;">${formatVND(f.price)}</strong>
+              </div>
+              <div class="price-tier-item">
+                <span>${hasDiscount ? `Cả lô / Từ ${f.bulk_min_qty} acc` : "Giá mua lô"}</span>
+                <strong style="color:#fbbf24;">${formatVND(f.bulk_price)}/acc</strong>
+              </div>
+            </div>
+            <div class="acc-footer">
+              <button type="button" class="btn btn-sm" onclick="filterByFolder(${f.id})">${
+        isSelected ? "Bỏ lọc" : "Xem danh sách"
+      }</button>
+              <button type="button" class="btn-detail" onclick="openFolderModal(${f.id})">Mua lẻ / Cả lô</button>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  renderFolderSelectOptions();
+}
+
+function filterByFolder(folderId) {
+  if (Number(currentFolderFilter) === Number(folderId)) {
+    currentFolderFilter = null;
+  } else {
+    currentFolderFilter = Number(folderId);
+  }
+  const banner = document.getElementById("activeFolderBanner");
+  if (banner) {
+    const f = foldersData.find((item) => Number(item.id) === Number(currentFolderFilter));
+    banner.textContent = f ? `Đang lọc theo gói cờ nhon: [${f.code}] ${f.title}` : "";
+  }
+  renderFolders();
+  renderAccounts();
+}
+
+function openFolderModal(folderId) {
+  const folder = foldersData.find((item) => Number(item.id) === Number(folderId));
+  if (!folder) return;
+  activeFolderId = folder.id;
+
+  const modal = document.getElementById("folderModal");
+  if (!modal) return;
+
+  const avail = getFolderAvailableCount(folder.id);
+  const items = getFolderAllAccounts(folder.id);
+
+  const titleEl = document.getElementById("folderModalTitle");
+  const metaEl = document.getElementById("folderModalMeta");
+  const imgEl = document.getElementById("folderModalImg");
+  const descEl = document.getElementById("folderModalDesc");
+  const retailEl = document.getElementById("folderModalRetailPrice");
+  const bulkLabelEl = document.getElementById("folderModalBulkLabel");
+  const bulkEl = document.getElementById("folderModalBulkPrice");
+  const qtyInput = document.getElementById("folderBuyQty");
+  const totalCalcEl = document.getElementById("folderModalTotalCalc");
+  const buyBtn = document.getElementById("folderBuyBtn");
+  const buyAllBtn = document.getElementById("folderBuyAllBtn");
+  const countEl = document.getElementById("folderModalCount");
+  const listEl = document.getElementById("folderAccountsList");
+
+  if (titleEl) titleEl.textContent = folder.title;
+  if (metaEl) {
+    metaEl.textContent = `Mã gói: #${folder.code} • Còn lại: ${avail} acc • ${folder.info}`;
+  }
+  if (imgEl) {
+    imgEl.onerror = () => {
+      imgEl.onerror = null;
+      imgEl.src = FALLBACK_IMG;
+    };
+    imgEl.src = folder.cover_image || FALLBACK_IMG;
+  }
+  if (descEl) {
+    descEl.textContent =
+      folder.description || `Rank: ${folder.rank} • Tướng: ${folder.heroes} • Skin: ${folder.skins}`;
+  }
+  if (retailEl) retailEl.textContent = formatVND(folder.price);
+  if (bulkLabelEl) {
+    bulkLabelEl.textContent = `Mua cả lô / Từ ${folder.bulk_min_qty} acc`;
+  }
+  if (bulkEl) bulkEl.textContent = `${formatVND(folder.bulk_price)}/acc`;
+
+  const maxAllowed = Math.max(1, avail || folder.max_per_order);
+  const updateOrderPreview = () => {
+    const rawQty = Number(qtyInput?.value || 1) || 1;
+    const qty = Math.max(1, Math.min(maxAllowed, rawQty));
+    const { isBulk, totalPrice } = calcFolderOrderPrice(folder, qty);
+    if (totalCalcEl) {
+      totalCalcEl.textContent = `= ${formatVND(totalPrice)}${isBulk ? " (Áp dụng giá sỉ)" : ""}`;
+    }
+  };
+
+  if (qtyInput) {
+    qtyInput.min = "1";
+    qtyInput.max = String(maxAllowed);
+    qtyInput.value = "1";
+    qtyInput.oninput = updateOrderPreview;
+  }
+  updateOrderPreview();
+
+  if (buyBtn) {
+    buyBtn.disabled = avail <= 0;
+    buyBtn.textContent = avail > 0 ? "🛒 Mua theo số lượng" : "Hết hàng";
+    buyBtn.onclick = async () => {
+      const rawQty = Number(qtyInput?.value || 1) || 1;
+      const qty = Math.max(1, Math.min(maxAllowed, rawQty));
+      const syntax = buildFolderBuySyntax(folder, qty, false);
+      const copied = await copyTextToClipboard(syntax);
+      if (copied) {
+        showToast(`Đã sao chép cú pháp mua ${qty} acc gói #${folder.code}!`, "success");
+      } else {
+        showToast(`Cú pháp: ${syntax}`, "info");
+      }
+      window.open(getContactUrl(), "_blank", "noopener,noreferrer");
+    };
+  }
+
+  if (buyAllBtn) {
+    buyAllBtn.disabled = avail <= 0;
+    buyAllBtn.textContent = avail > 0 ? `🔥 Chốt cả lô (${avail} acc)` : "Đã hết lô";
+    buyAllBtn.onclick = async () => {
+      const syntax = buildFolderBuySyntax(folder, avail, true);
+      const copied = await copyTextToClipboard(syntax);
+      if (copied) {
+        showToast(`Đã sao chép cú pháp chốt cả lô ${avail} acc #${folder.code}!`, "success");
+      } else {
+        showToast(`Cú pháp: ${syntax}`, "info");
+      }
+      window.open(getContactUrl(), "_blank", "noopener,noreferrer");
+    };
+  }
+
+  if (countEl) countEl.textContent = String(items.length);
+  if (listEl) {
+    if (!items.length) {
+      listEl.innerHTML = `<div style="grid-column:1/-1;color:#94a3b8;font-size:0.88rem;">Chưa có acc con nào được gán vào gói này.</div>`;
+    } else {
+      listEl.innerHTML = items
+        .map(
+          (acc) => `
+          <div style="background:rgba(7,11,20,0.85);border:1px solid rgba(148,163,184,0.2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>#${escapeHtml(acc.code)}</strong>
+              <span style="font-size:0.78rem;font-weight:700;color:${acc.sold ? "#f87171" : "#4ade80"};">${
+            acc.sold ? "Đã bán" : "Còn hàng"
+          }</span>
+            </div>
+            <div style="font-size:0.84rem;color:#cbd5e1;">${escapeHtml(acc.title)}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+              <span style="color:#4ade80;font-weight:700;">${formatVND(acc.price || folder.price)}</span>
+              <button type="button" class="btn btn-sm" onclick="closeFolderModal();openAccountDetail(${acc.id})">Chi tiết</button>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+    }
+  }
+
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
+}
+
+function closeFolderModal() {
+  const modal = document.getElementById("folderModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  activeFolderId = null;
+  if (!isAdminModalOpen()) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+async function uploadSingleImage(file) {
+  if (!file || !sbClient || !currentUser) return null;
+  const ext =
+    (file.name.split(".").pop() || "jpg")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "") || "jpg";
+  const filePath = `folder_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+  const { error } = await sbClient.storage.from(STORAGE_BUCKET).upload(filePath, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || "image/jpeg"
+  });
+  if (error) {
+    throw new Error("Tải ảnh lỗi: " + error.message);
+  }
+  const { data } = sbClient.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+  return data?.publicUrl || null;
+}
+
+function parseBulkAccountLines(rawText, folderObj) {
+  const lines = String(rawText || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  return lines.map((line, idx) => {
+    let code = "";
+    let secret = line;
+    if (line.includes("|")) {
+      const parts = line.split("|");
+      code = stripLeadingHashes(parts[0]);
+      secret = parts.slice(1).join("|").trim();
+    }
+    if (!code) {
+      code = `${folderObj.code}-${Date.now().toString().slice(-4)}-${idx + 1}`;
+    }
+    return {
+      folder_id: folderObj.id,
+      code,
+      title: `${folderObj.title} #${code}`,
+      price: folderObj.price,
+      rank: folderObj.rank,
+      heroes: folderObj.heroes,
+      skins: folderObj.skins,
+      info: folderObj.info,
+      images: [folderObj.cover_image || FALLBACK_IMG],
+      description: secret
+        ? `Thông tin acc: ${secret}${folderObj.description ? "\n" + folderObj.description : ""}`
+        : folderObj.description,
+      sold: false
+    };
+  });
+}
+
+function resetFolderForm() {
+  editingFolderId = null;
+  selectedFolderCoverFile = null;
+  const fileInput = document.getElementById("fldCoverFile");
+  if (fileInput) fileInput.value = "";
+  const form = document.getElementById("folderForm");
+  if (form) form.reset();
+  const btn = document.getElementById("saveFolderBtn");
+  const cancelBtn = document.getElementById("cancelFolderEditBtn");
+  if (btn) btn.textContent = "Lưu gói acc cờ nhon";
+  if (cancelBtn) cancelBtn.style.display = "none";
+}
+
+function startEditFolder(id) {
+  const f = foldersData.find((item) => Number(item.id) === Number(id));
+  if (!f) return;
+  editingFolderId = f.id;
+  const setVal = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.value = val;
+  };
+  setVal("fldCode", f.code);
+  setVal("fldTitle", f.title);
+  setVal("fldPrice", f.price);
+  setVal("fldBulkPrice", f.bulk_price);
+  setVal("fldBulkMinQty", f.bulk_min_qty);
+  setVal("fldMaxPerOrder", f.max_per_order);
+  setVal("fldRank", f.rank);
+  setVal("fldHeroes", f.heroes);
+  setVal("fldSkins", f.skins);
+  setVal("fldInfo", f.info);
+  setVal("fldCoverUrl", f.cover_image || "");
+  setVal("fldDesc", f.description || "");
+  setVal("fldBulkAccounts", "");
+
+  const btn = document.getElementById("saveFolderBtn");
+  const cancelBtn = document.getElementById("cancelFolderEditBtn");
+  if (btn) btn.textContent = `Cập nhật gói ${f.code}`;
+  if (cancelBtn) cancelBtn.style.display = "inline-flex";
+}
+
+async function handleSaveFolder(e) {
+  e.preventDefault();
+  if (isSavingFolder) return;
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin trước khi lưu gói acc cờ nhon.", "warning");
+    return;
+  }
+  if (!hasFoldersTable) {
+    showToast("Chưa tạo bảng account_folders trên Supabase. Hãy chạy SQL ở trên.", "warning");
+    return;
+  }
+
+  const getVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
+
+  const code = stripLeadingHashes(getVal("fldCode"));
+  const title = getVal("fldTitle");
+  if (!code || !title) {
+    showToast("Mã gói và tên loại acc không được để trống.", "warning");
+    return;
+  }
+
+  isSavingFolder = true;
+  const btn = document.getElementById("saveFolderBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    let coverUrl = getVal("fldCoverUrl");
+    if (selectedFolderCoverFile) {
+      const uploaded = await uploadSingleImage(selectedFolderCoverFile);
+      if (uploaded) coverUrl = uploaded;
+    }
+    const cleanCover = normalizeImages(coverUrl)[0] || FALLBACK_IMG;
+    const retailPrice = getNum("fldPrice");
+    const bulkPrice = getNum("fldBulkPrice") || retailPrice;
+
+    const payload = {
+      code,
+      title,
+      price: retailPrice,
+      bulk_price: bulkPrice,
+      bulk_min_qty: Math.max(2, getNum("fldBulkMinQty") || 5),
+      max_per_order: Math.max(1, getNum("fldMaxPerOrder") || 10),
+      rank: getVal("fldRank") || "Acc reg",
+      heroes: getNum("fldHeroes"),
+      skins: getNum("fldSkins"),
+      info: getVal("fldInfo") || "Trắng thông tin",
+      cover_image: cleanCover,
+      description: getVal("fldDesc")
+    };
+
+    let savedFolderRow = null;
+    if (editingFolderId !== null) {
+      let { data, error } = await sbClient
+        .from("account_folders")
+        .update(payload)
+        .eq("id", editingFolderId)
+        .select()
+        .single();
+      if (error && /bulk_price|bulk_min_qty/i.test(error.message)) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.bulk_price;
+        delete fallbackPayload.bulk_min_qty;
+        const retry = await sbClient
+          .from("account_folders")
+          .update(fallbackPayload)
+          .eq("id", editingFolderId)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
+      if (error) {
+        showToast("Cập nhật gói lỗi: " + error.message, "error");
+        return;
+      }
+      savedFolderRow = data;
+    } else {
+      let { data, error } = await sbClient
+        .from("account_folders")
+        .insert([payload])
+        .select()
+        .single();
+      if (error && /bulk_price|bulk_min_qty/i.test(error.message)) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.bulk_price;
+        delete fallbackPayload.bulk_min_qty;
+        const retry = await sbClient
+          .from("account_folders")
+          .insert([fallbackPayload])
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
+      if (error) {
+        showToast("Tạo gói lỗi: " + error.message, "error");
+        return;
+      }
+      savedFolderRow = data;
+    }
+
+    const bulkText = getVal("fldBulkAccounts");
+    if (bulkText && savedFolderRow) {
+      const normalizedFolder = normalizeFolderRow(savedFolderRow);
+      const bulkRows = parseBulkAccountLines(bulkText, normalizedFolder);
+      if (bulkRows.length > 0) {
+        const { error: insErr } = await sbClient.from("accounts").insert(bulkRows);
+        if (insErr) {
+          showToast("Đã lưu gói nhưng thêm danh sách acc lỗi: " + insErr.message, "warning");
+        } else {
+          showToast(`Đã lưu gói và thêm ${bulkRows.length} acc vào gói!`, "success");
+        }
+      }
+    } else {
+      showToast("Đã lưu gói acc cờ nhon!", "success");
+    }
+
+    resetFolderForm();
+    await Promise.all([fetchFolders(), fetchAccounts(true, true)]);
+  } finally {
+    isSavingFolder = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function deleteFolder(id) {
+  if (!currentUser || !sbClient) return;
+  const f = foldersData.find((item) => Number(item.id) === Number(id));
+  if (!f) return;
+  if (!confirm(`Xóa gói [${f.code}] ${f.title}? (Các acc bên trong vẫn giữ lại thành tài khoản khác)`)) return;
+
+  const { error } = await sbClient.from("account_folders").delete().eq("id", Number(id));
+  if (error) {
+    showToast("Xóa gói lỗi: " + error.message, "error");
+    return;
+  }
+  if (Number(currentFolderFilter) === Number(id)) {
+    currentFolderFilter = null;
+  }
+  showToast("Đã xóa gói acc cờ nhon.", "success");
+  await Promise.all([fetchFolders(), fetchAccounts(true, true)]);
+}
+
+function renderAdminFoldersTable() {
+  const tbody = document.getElementById("adminFoldersBody");
+  if (!tbody) return;
+  if (!foldersData.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:12px;">Chưa có gói acc cờ nhon nào.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = foldersData
+    .map(
+      (f) => `
+      <tr>
+        <td><b>#${escapeHtml(f.code)}</b></td>
+        <td>${escapeHtml(f.title)}</td>
+        <td><b>${getFolderAvailableCount(f.id)}</b></td>
+        <td>${formatVND(f.price)} / ${formatVND(f.bulk_price)}</td>
+        <td style="white-space:nowrap;display:flex;gap:6px;">
+          <button type="button" class="btn btn-sm" onclick="startEditFolder(${f.id})">Sửa</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteFolder(${f.id})">Xóa</button>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+async function fetchFolders() {
+  if (!sbClient || !hasFoldersTable) {
+    foldersData = [];
+    renderFolders();
+    renderAdminFoldersTable();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from("account_folders")
+      .select("*")
+      .order("id", { ascending: false });
+    if (error) {
+      hasFoldersTable = false;
+      foldersData = [];
+      renderFolders();
+      renderAdminFoldersTable();
+      return;
+    }
+    foldersData = Array.isArray(data) ? data.map(normalizeFolderRow) : [];
+    renderFolders();
+    renderAdminFoldersTable();
+  } catch {
+    foldersData = [];
+    renderFolders();
+    renderAdminFoldersTable();
+  }
+}
+
+function renderUploadPreviews() {
+  const box = document.getElementById("uploadPreviewList");
+  if (!box) return;
+  if (!selectedUploadFiles.length) {
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = selectedUploadFiles
+    .map((file, idx) => {
+      const blobUrl = URL.createObjectURL(file);
+      return `
+        <div style="position:relative;width:74px;height:54px;">
+          <img src="${blobUrl}" alt="${escapeHtml(file.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid rgba(56,189,248,0.5);" />
+          <span style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,0.75);color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">#${idx + 1}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function uploadSelectedAccountFiles() {
+  if (!selectedUploadFiles.length) return [];
+  if (!sbClient || !currentUser) {
+    throw new Error("Cần đăng nhập Admin trước khi tải ảnh lên.");
+  }
+
+  const uploadedUrls = [];
+  for (let i = 0; i < selectedUploadFiles.length; i++) {
+    const file = selectedUploadFiles[i];
+    const ext =
+      (file.name.split(".").pop() || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "") || "jpg";
+    const filePath = `acc_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+
+    const { error: upError } = await sbClient.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "image/jpeg"
+      });
+
+    if (upError) {
+      throw new Error("Tải ảnh lỗi (" + file.name + "): " + upError.message);
+    }
+
+    const { data: pubData } = sbClient.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    if (pubData?.publicUrl) {
+      uploadedUrls.push(pubData.publicUrl);
+    }
+  }
+  return uploadedUrls;
+}
+
+function startOnlineCounter() {
+  const el = document.getElementById("onlineCount");
+  onlineCount = Math.floor(Math.random() * 6) + 5;
+  const updateText = () => {
+    if (el) el.textContent = String(onlineCount);
+  };
+  updateText();
+
+  setInterval(() => {
+    const delta = Math.floor(Math.random() * 3) - 1;
+    onlineCount = Math.max(5, Math.min(10, onlineCount + delta));
+    updateText();
+  }, 5000);
+}
+
+function applyShopConfigToUI() {
+  document.querySelectorAll("[data-shop-name]").forEach((el) => {
+    el.textContent = shopConfig.shop_name || DEFAULT_CONFIG.shop_name;
+  });
+
+  const digits = cleanPhone(shopConfig.zalo_phone);
+  const zaloHref =
+    shopConfig.zalo && shopConfig.zalo !== "https://zalo.me/"
+      ? shopConfig.zalo
+      : digits
+      ? `https://zalo.me/${digits}`
+      : DEFAULT_CONFIG.zalo;
+
+  const fbHref = shopConfig.fb || DEFAULT_CONFIG.fb;
+
+  ["zaloContactBtn", "mainZaloBtn"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && zaloHref) el.href = zaloHref;
+  });
+
+  ["fbContactBtn", "mainMessBtn"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && fbHref) {
+      el.href = fbHref;
+      el.style.display = "inline-flex";
+    }
+  });
+
+  const phoneBadge = document.getElementById("zaloPhoneDisplay");
+  const phoneText = document.getElementById("zaloPhoneText");
+  if (phoneBadge && phoneText) {
+    if (digits) {
+      phoneText.textContent = digits;
+      phoneBadge.style.display = "inline-flex";
+    } else {
+      phoneBadge.style.display = "none";
+    }
+  }
+
+  const cfgNameInput = document.getElementById("cfgShopName");
+  const cfgPhoneInput = document.getElementById("cfgZaloPhone");
+  const cfgZaloInput = document.getElementById("cfgZalo");
+  const cfgFbInput = document.getElementById("cfgFb");
+  if (cfgNameInput && document.activeElement !== cfgNameInput) {
+    cfgNameInput.value = shopConfig.shop_name || "";
+  }
+  if (cfgPhoneInput && document.activeElement !== cfgPhoneInput) {
+    cfgPhoneInput.value = shopConfig.zalo_phone || digits || "";
+  }
+  if (cfgZaloInput && document.activeElement !== cfgZaloInput) {
+    cfgZaloInput.value = zaloHref;
+  }
+  if (cfgFbInput && document.activeElement !== cfgFbInput) {
+    cfgFbInput.value = fbHref;
+  }
+}
+
+async function fetchShopConfig() {
+  if (!sbClient) return;
+  try {
+    const { data, error } = await sbClient
+      .from("shop_config")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Lỗi tải shop_config:", error.message);
+      return;
+    }
+    if (data) {
+      let extractedPhone = String(data.zalo_phone || "").trim();
+      if (!extractedPhone && typeof data.zalo === "string") {
+        const match = data.zalo.match(/zalo\.me\/(\d{7,15})/i);
+        if (match) extractedPhone = match[1];
+      }
+      shopConfig = {
+        id: 1,
+        shop_name: data.shop_name || DEFAULT_CONFIG.shop_name,
+        zalo_phone: extractedPhone,
+        zalo:
+          data.zalo ||
+          (extractedPhone ? `https://zalo.me/${extractedPhone}` : DEFAULT_CONFIG.zalo),
+        fb: data.fb || DEFAULT_CONFIG.fb
+      };
+      applyShopConfigToUI();
+    }
+  } catch (err) {
+    console.warn("Ngoại lệ khi tải shop_config:", err);
+  }
+}
+
+async function fetchAccounts(notifyError = false, forceRender = false) {
+  if (!forceRender && (isAdminModalOpen() || isSavingAccount || isSavingFolder || isSavingSupport)) {
+    return;
+  }
+
+  if (!sbClient) {
+    isSupabaseConnected = false;
+    accountsData = [...DEMO_ACCOUNTS];
+    renderFolders();
+    renderAccounts();
+    renderAdminTable();
+    updateStats();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from("accounts")
+      .select("*")
+      .order("id", { ascending: false });
+
+    if (error) {
+      console.error("Lỗi tải accounts:", error.message);
+      if (notifyError) {
+        showToast("Lỗi tải dữ liệu Supabase: " + error.message, "error");
+      }
+      if (!isSupabaseConnected && accountsData.length === 0) {
+        accountsData = [...DEMO_ACCOUNTS];
+      }
+      renderFolders();
+      renderAccounts();
+      renderAdminTable();
+      updateStats();
+      return;
+    }
+
+    isSupabaseConnected = true;
+    const rows = Array.isArray(data) ? data.map(normalizeAccountRow) : [];
+    accountsData = rows.length > 0 ? rows : currentUser ? [] : [...DEMO_ACCOUNTS];
+    renderFolders();
+    renderAccounts();
+    renderAdminTable();
+    updateStats();
+  } catch (err) {
+    console.error("Ngoại lệ khi tải accounts:", err);
+    if (notifyError) {
+      showToast("Không thể kết nối tới Supabase.", "error");
+    }
+  }
+}
+
+function updateStats() {
+  const totalEl = document.getElementById("statTotalAcc");
+  const availableEl = document.getElementById("statAvailableAcc");
+  const soldEl = document.getElementById("statSoldAcc");
+
+  const realList = accountsData.filter((a) => !a._isDemo);
+  const total = realList.length;
+  const sold = realList.filter((a) => a.sold).length;
+  const available = total - sold;
+
+  if (totalEl) totalEl.textContent = String(total);
+  if (availableEl) availableEl.textContent = String(available);
+  if (soldEl) soldEl.textContent = String(sold);
+}
+
+function getFilteredAccounts() {
+  let list = [...accountsData];
+
+  if (currentFolderFilter !== null) {
+    list = list.filter((a) => Number(a.folder_id) === Number(currentFolderFilter));
+  }
+
+  if (currentFilter === "available") {
+    list = list.filter((a) => !a.sold);
+  } else if (currentFilter === "sold") {
+    list = list.filter((a) => a.sold);
+  } else if (currentFilter === "under50") {
+    list = list.filter((a) => !a.sold && a.price > 0 && a.price < 50000);
+  } else if (currentFilter === "50to150") {
+    list = list.filter((a) => !a.sold && a.price >= 50000 && a.price <= 150000);
+  } else if (currentFilter === "150to300") {
+    list = list.filter((a) => !a.sold && a.price > 150000 && a.price <= 300000);
+  } else if (currentFilter === "300to500") {
+    list = list.filter((a) => !a.sold && a.price > 300000 && a.price <= 500000);
+  } else if (currentFilter === "over500") {
+    list = list.filter((a) => !a.sold && a.price > 500000);
+  } else if (currentFilter === "manySkins") {
+    list = list.filter((a) => !a.sold && a.skins >= 100);
+  }
+
+  if (currentRankFilter && currentRankFilter !== "all") {
+    const targetRank = currentRankFilter.toLowerCase();
+    list = list.filter((a) => String(a.rank || "").toLowerCase().includes(targetRank));
+  }
+
+  if (searchKeyword.trim()) {
+    const q = searchKeyword.trim().toLowerCase();
+    list = list.filter(
+      (a) =>
+        a.code.toLowerCase().includes(q) ||
+        a.title.toLowerCase().includes(q) ||
+        a.rank.toLowerCase().includes(q) ||
+        a.info.toLowerCase().includes(q)
+    );
+  }
+
+  if (currentSort === "price-asc") {
+    list.sort((a, b) => a.price - b.price);
+  } else if (currentSort === "price-desc") {
+    list.sort((a, b) => b.price - a.price);
+  } else if (currentSort === "skins-desc") {
+    list.sort((a, b) => b.skins - a.skins);
+  } else {
+    list.sort((a, b) => b.id - a.id);
+  }
+
+  return list;
+}
+
+function renderAccounts() {
+  const grid = document.getElementById("accountsGrid");
+  if (!grid) return;
+
+  const list = getFilteredAccounts();
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="rgb-frame" style="grid-column:1/-1;text-align:center;padding:42px 16px;color:#94a3b8;">
+        Chưa có tài khoản nào trong danh mục này. Mở <b>Quản Lý Shop</b> để thêm tài khoản mới.
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = list
+    .map((acc) => {
+      const thumb = acc.images[0] || FALLBACK_IMG;
+
+      return `
+        <article class="acc-card rgb-frame ${acc.sold ? "is-sold" : ""}" data-id="${acc.id}">
+          <div class="acc-thumb-wrap" onclick="openAccountDetail(${acc.id})">
+            <img
+              src="${escapeHtml(thumb)}"
+              alt="${escapeHtml(acc.title)}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
+            />
+            <span class="acc-code">#${escapeHtml(acc.code)}</span>
+            ${acc.sold ? `<span class="acc-sold-badge">ĐÃ BÁN</span>` : ""}
+          </div>
+          <div class="acc-body">
+            <h3 class="acc-title" onclick="openAccountDetail(${acc.id})">${escapeHtml(acc.title)}</h3>
+            <div class="acc-meta">
+              <span>Rank: <b>${escapeHtml(acc.rank)}</b></span>
+              <span>Tướng: <b>${acc.heroes}</b></span>
+              <span>Skin: <b>${acc.skins}</b></span>
+            </div>
+            <div class="acc-info-tag">${escapeHtml(acc.info)}</div>
+            <div class="acc-footer">
+              <span class="acc-price">${acc.sold ? "ĐÃ BÁN" : formatVND(acc.price)}</span>
+              <button type="button" class="btn-detail" onclick="openAccountDetail(${acc.id})">
+                ${acc.sold ? "Xem lại" : "Chi tiết"}
+              </button>
             </div>
           </div>
         </article>
@@ -328,44 +1627,789 @@ function renderSupportList() {
     .join("");
 }
 
-async function copySupportCode(val) {
-  const ok = await copyTextToClipboard(val);
-  showToast(ok ? "Đã copy mã/link chung sức!" : val, ok ? "success" : "info");
+function openAccountDetail(id) {
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc) return;
+
+  activeDetailAccId = acc.id;
+  detailGalleryIndex = 0;
+
+  const modal = document.getElementById("detailModal");
+  if (!modal) return;
+
+  const mainImg = document.getElementById("detailMainImg");
+  const thumbsWrap = document.getElementById("detailThumbs");
+  const titleEl = document.getElementById("detailTitle");
+  const codeEl = document.getElementById("detailCode");
+  const priceEl = document.getElementById("detailPrice");
+  const rankEl = document.getElementById("detailRank");
+  const heroesEl = document.getElementById("detailHeroes");
+  const skinsEl = document.getElementById("detailSkins");
+  const infoEl = document.getElementById("detailInfo");
+  const descEl = document.getElementById("detailDesc");
+  const buyBtn = document.getElementById("detailBuyBtn");
+
+  if (titleEl) titleEl.textContent = acc.title;
+  if (codeEl) codeEl.textContent = "Mã acc: #" + acc.code;
+  if (priceEl) priceEl.textContent = acc.sold ? "ĐÃ BÁN" : formatVND(acc.price);
+  if (rankEl) rankEl.textContent = acc.rank;
+  if (heroesEl) heroesEl.textContent = String(acc.heroes);
+  if (skinsEl) skinsEl.textContent = String(acc.skins);
+  if (infoEl) infoEl.textContent = acc.info;
+  if (descEl) {
+    descEl.textContent = acc.description || "Liên hệ shop để kiểm tra chi tiết tài khoản.";
+  }
+
+  const updateGallery = () => {
+    const safeUrl = acc.images[detailGalleryIndex] || FALLBACK_IMG;
+    if (mainImg) {
+      mainImg.onerror = () => {
+        mainImg.onerror = null;
+        mainImg.src = FALLBACK_IMG;
+      };
+      mainImg.src = safeUrl;
+    }
+    if (thumbsWrap) {
+      thumbsWrap.innerHTML = acc.images
+        .map(
+          (imgUrl, idx) => `
+          <img
+            src="${escapeHtml(imgUrl)}"
+            alt="Ảnh ${idx + 1}"
+            style="width:64px;height:44px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid ${
+              idx === detailGalleryIndex ? "#38bdf8" : "rgba(148,163,184,0.25)"
+            };"
+            onerror="this.onerror=null;this.src='${FALLBACK_IMG}';"
+            onclick="selectDetailImage(${idx})"
+          />
+        `
+        )
+        .join("");
+    }
+  };
+
+  window.selectDetailImage = (idx) => {
+    detailGalleryIndex = idx;
+    updateGallery();
+  };
+
+  updateGallery();
+
+  if (buyBtn) {
+    if (acc.sold) {
+      buyBtn.textContent = "Tài khoản đã bán";
+      buyBtn.disabled = true;
+      buyBtn.onclick = null;
+    } else {
+      buyBtn.textContent = `Mua ngay acc #${acc.code}`;
+      buyBtn.disabled = false;
+      buyBtn.onclick = async () => {
+        const syntax = buildBuySyntax(acc);
+        const copied = await copyTextToClipboard(syntax);
+        if (copied) {
+          showToast(`Đã sao chép cú pháp mua acc #${acc.code}! Dán tin nhắn để gửi shop.`, "success");
+        } else {
+          showToast(`Cú pháp: ${syntax}`, "info");
+        }
+        window.open(getContactUrl(), "_blank", "noopener,noreferrer");
+      };
+    }
+  }
+
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
 }
 
-async function fetchSupportRequests() {
-  if (!sbClient || !hasSupportTable) {
-    supportData = loadLocalSupport().map(normalizeSupportRow);
-    renderSupportList();
+function closeDetailModal() {
+  const modal = document.getElementById("detailModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  activeDetailAccId = null;
+  if (!isAdminModalOpen() && !activeFolderId) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function syncAuthUI() {
+  const loginBox = document.getElementById("adminLoginBox");
+  const panelBox = document.getElementById("adminPanelBox");
+  const userBadge = document.getElementById("adminUserEmail");
+  const emailPrefill = document.getElementById("adminEmail");
+
+  if (emailPrefill && !emailPrefill.value) {
+    emailPrefill.value = ADMIN_DEFAULT_EMAIL;
+  }
+
+  if (currentUser) {
+    if (loginBox) loginBox.style.display = "none";
+    if (panelBox) panelBox.style.display = "block";
+    if (userBadge) userBadge.textContent = "Đã đăng nhập: " + (currentUser.email || "Admin");
+  } else {
+    if (loginBox) loginBox.style.display = "block";
+    if (panelBox) panelBox.style.display = "none";
+    if (userBadge) userBadge.textContent = "Chưa đăng nhập phiên quản trị";
+  }
+  renderReviews();
+}
+
+async function openAdminModal() {
+  const modal = document.getElementById("adminModal");
+  if (!modal) return;
+
+  modal.style.display = "flex";
+  document.body.classList.add("modal-open");
+
+  if (sbClient && sbClient.auth && typeof sbClient.auth.getSession === "function" && !currentUser) {
+    try {
+      const { data } = await sbClient.auth.getSession();
+      currentUser = data?.session?.user || null;
+    } catch (err) {
+      console.warn("Không đọc được session:", err);
+    }
+  }
+  syncAuthUI();
+  renderFolderSelectOptions();
+  renderAdminFoldersTable();
+  renderAdminSupportTable();
+  renderAdminTable();
+  applyShopConfigToUI();
+}
+
+function closeAdminModal() {
+  const modal = document.getElementById("adminModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  document.body.classList.remove("modal-open");
+  fetchAccounts(false, true);
+}
+
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  if (!sbClient) {
+    showToast("Chưa khởi tạo được Supabase Client.", "error");
     return;
   }
 
-  try {
-    const { data, error } = await sbClient
-      .from("support_requests")
-      .select("*")
-      .order("id", { ascending: false });
+  const emailInput = document.getElementById("adminEmail");
+  const passInput = document.getElementById("adminPassword");
+  const submitBtn = document.getElementById("adminLoginSubmitBtn");
+  const email = (emailInput?.value || "").trim();
+  const password = (passInput?.value || "").trim();
 
+  if (!email || !password) {
+    showToast("Vui lòng nhập đầy đủ Email và Mật khẩu.", "warning");
+    return;
+  }
+
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
     if (error) {
-      hasSupportTable = false;
-      supportData = loadLocalSupport().map(normalizeSupportRow);
-      renderSupportList();
+      showToast("Đăng nhập thất bại: " + error.message, "error");
       return;
     }
 
-    supportData = Array.isArray(data) ? data.map(normalizeSupportRow) : [];
-    renderSupportList();
-  } catch {
-    supportData = loadLocalSupport().map(normalizeSupportRow);
-    renderSupportList();
+    currentUser = data?.user || null;
+    if (passInput) passInput.value = "";
+    syncAuthUI();
+    await Promise.all([
+      fetchShopConfig(),
+      fetchFolders(),
+      fetchSupportEvents(),
+      fetchAccounts(true, true),
+      fetchReviews()
+    ]);
+    showToast("Đăng nhập quản trị thành công!", "success");
+  } catch (err) {
+    showToast("Lỗi kết nối khi đăng nhập: " + (err?.message || err), "error");
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
-async function handleCreateSupport(e) {
-  e.preventDefault();
-  if (isSubmittingSupport) return;
+async function handleAdminLogout() {
+  if (sbClient) {
+    await sbClient.auth.signOut();
+  }
+  currentUser = null;
+  resetAccountForm();
+  resetFolderForm();
+  resetSupportForm();
+  syncAuthUI();
+  await fetchAccounts(false, true);
+  showToast("Đã đăng xuất khỏi phiên quản trị.", "info");
+}
 
-  const nameEl = document.getElementById("supName");
-  const eventEl = document.getElementById("supEvent");
-  const linkEl = document.getElementById("supLinkCode");
-  const noteEl = document.getElementById
+function resetAccountForm() {
+  editingAccId = null;
+  selectedUploadFiles = [];
+  renderUploadPreviews();
+
+  const fileInput = document.getElementById("accFiles");
+  if (fileInput) fileInput.value = "";
+
+  const form = document.getElementById("accountForm");
+  if (form) form.reset();
+
+  const submitBtn = document.getElementById("saveAccountBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  if (submitBtn) submitBtn.textContent = "Thêm tài khoản mới";
+  if (cancelEditBtn) cancelEditBtn.style.display = "none";
+}
+
+function startEditAccount(id) {
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc || acc._isDemo) {
+    showToast("Đây là dữ liệu mẫu, hãy thêm tài khoản thật rồi sửa.", "warning");
+    return;
+  }
+
+  editingAccId = acc.id;
+  selectedUploadFiles = [];
+  renderUploadPreviews();
+
+  const setVal = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.value = val;
+  };
+
+  setVal("accFolderId", acc.folder_id ? String(acc.folder_id) : "");
+  setVal("accCode", acc.code);
+  setVal("accTitle", acc.title);
+  setVal("accPrice", acc.price);
+  setVal("accRank", acc.rank);
+  setVal("accHeroes", acc.heroes);
+  setVal("accSkins", acc.skins);
+  setVal("accInfo", acc.info);
+  setVal("accImages", acc.images.join("\n"));
+  setVal("accDesc", acc.description);
+
+  const soldCheckbox = document.getElementById("accSold");
+  if (soldCheckbox) soldCheckbox.checked = Boolean(acc.sold);
+
+  const submitBtn = document.getElementById("saveAccountBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  if (submitBtn) submitBtn.textContent = `Lưu cập nhật #${acc.code}`;
+  if (cancelEditBtn) cancelEditBtn.style.display = "inline-flex";
+}
+
+async function handleSaveAccount(e) {
+  e.preventDefault();
+  if (isSavingAccount) return;
+
+  if (!currentUser && sbClient?.auth) {
+    try {
+      const { data } = await sbClient.auth.getSession();
+      currentUser = data?.session?.user || null;
+      syncAuthUI();
+    } catch {}
+  }
+
+  if (!currentUser) {
+    showToast("Bạn cần đăng nhập Admin trước khi thêm/sửa acc.", "warning");
+    return;
+  }
+  if (!sbClient) {
+    showToast("Chưa kết nối Supabase.", "error");
+    return;
+  }
+
+  const getVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const getNum = (id) => Number(document.getElementById(id)?.value || 0) || 0;
+
+  const code = stripLeadingHashes(getVal("accCode"));
+  const title = getVal("accTitle");
+  if (!code || !title) {
+    showToast("Mã acc và tiêu đề không được để trống.", "warning");
+    return;
+  }
+
+  isSavingAccount = true;
+  const submitBtn = document.getElementById("saveAccountBtn");
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    let uploadedUrls = [];
+    if (selectedUploadFiles.length > 0) {
+      showToast(`Đang tải ${selectedUploadFiles.length} ảnh lên...`, "info");
+      uploadedUrls = await uploadSelectedAccountFiles();
+    }
+
+    const manualImgs = normalizeImages(getVal("accImages")).filter((u) => u !== FALLBACK_IMG);
+    const finalImages =
+      uploadedUrls.length > 0
+        ? [...uploadedUrls, ...manualImgs]
+        : normalizeImages(getVal("accImages"));
+
+    const rawFolderId = getVal("accFolderId");
+    const folderId = rawFolderId ? Number(rawFolderId) : null;
+
+    const payload = {
+      folder_id: folderId,
+      code,
+      title,
+      price: getNum("accPrice"),
+      rank: getVal("accRank") || "Acc reg",
+      heroes: getNum("accHeroes"),
+      skins: getNum("accSkins"),
+      info: getVal("accInfo") || "Trắng thông tin",
+      images: finalImages,
+      description: getVal("accDesc"),
+      sold: Boolean(document.getElementById("accSold")?.checked)
+    };
+
+    if (editingAccId !== null) {
+      const { error } = await sbClient
+        .from("accounts")
+        .update(payload)
+        .eq("id", editingAccId);
+
+      if (error) {
+        showToast("Cập nhật acc lỗi: " + error.message, "error");
+        return;
+      }
+      showToast(`Đã cập nhật tài khoản #${code}.`, "success");
+    } else {
+      const { error } = await sbClient.from("accounts").insert([payload]);
+      if (error) {
+        showToast("Thêm acc lỗi: " + error.message, "error");
+        return;
+      }
+      showToast(`Đã thêm tài khoản #${code} lên Supabase!`, "success");
+    }
+
+    resetAccountForm();
+    await fetchAccounts(true, true);
+  } catch (err) {
+    showToast(err?.message || "Lỗi khi lưu tài khoản.", "error");
+  } finally {
+    isSavingAccount = false;
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function toggleSoldStatus(id) {
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin để đổi trạng thái.", "warning");
+    return;
+  }
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc || acc._isDemo) return;
+
+  const { error } = await sbClient
+    .from("accounts")
+    .update({ sold: !acc.sold })
+    .eq("id", acc.id);
+
+  if (error) {
+    showToast("Đổi trạng thái lỗi: " + error.message, "error");
+    return;
+  }
+
+  showToast(
+    !acc.sold ? `Đã đánh dấu #${acc.code} là ĐÃ BÁN.` : `Đã mở bán lại #${acc.code}.`,
+    "success"
+  );
+  await fetchAccounts(true, true);
+}
+
+async function deleteAccount(id) {
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin để xóa tài khoản.", "warning");
+    return;
+  }
+  const acc = accountsData.find((item) => item.id === Number(id));
+  if (!acc || acc._isDemo) {
+    showToast("Không thể xóa dữ liệu mẫu khi chưa có acc trên Supabase.", "warning");
+    return;
+  }
+
+  const label = `#${acc.code}`;
+  if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn tài khoản ${label}?`)) return;
+
+  const { error } = await sbClient.from("accounts").delete().eq("id", Number(id));
+  if (error) {
+    showToast("Xóa acc lỗi: " + error.message, "error");
+    return;
+  }
+
+  if (editingAccId === Number(id)) {
+    resetAccountForm();
+  }
+  showToast(`Đã xóa ${label}.`, "success");
+  await fetchAccounts(true, true);
+}
+
+async function handleSaveConfig(e) {
+  e.preventDefault();
+  if (!currentUser || !sbClient) {
+    showToast("Cần đăng nhập Admin để lưu cấu hình shop.", "warning");
+    return;
+  }
+
+  const shopName =
+    (document.getElementById("cfgShopName")?.value || "").trim() || DEFAULT_CONFIG.shop_name;
+  const zaloPhone = cleanPhone(document.getElementById("cfgZaloPhone")?.value || "");
+  let zaloLink = (document.getElementById("cfgZalo")?.value || "").trim();
+  const fbLink = (document.getElementById("cfgFb")?.value || "").trim() || DEFAULT_CONFIG.fb;
+
+  if (zaloPhone && (!zaloLink || zaloLink === "https://zalo.me/")) {
+    zaloLink = `https://zalo.me/${zaloPhone}`;
+  } else if (!zaloLink) {
+    zaloLink = DEFAULT_CONFIG.zalo;
+  }
+
+  const nextConfig = {
+    id: 1,
+    shop_name: shopName,
+    zalo_phone: zaloPhone,
+    zalo: zaloLink,
+    fb: fbLink
+  };
+
+  let { error } = await sbClient
+    .from("shop_config")
+    .upsert(nextConfig, { onConflict: "id" });
+
+  if (error && /zalo_phone/i.test(error.message)) {
+    const fallbackCfg = {
+      id: 1,
+      shop_name: shopName,
+      zalo: zaloLink,
+      fb: fbLink
+    };
+    const retry = await sbClient
+      .from("shop_config")
+      .upsert(fallbackCfg, { onConflict: "id" });
+    error = retry.error;
+  }
+
+  if (error) {
+    showToast("Lưu cấu hình lỗi: " + error.message, "error");
+    return;
+  }
+
+  shopConfig = nextConfig;
+  applyShopConfigToUI();
+  showToast("Đã lưu cấu hình shop lên Supabase!", "success");
+}
+
+function renderAdminTable() {
+  const tbody = document.getElementById("adminAccountsBody");
+  if (!tbody) return;
+
+  const realAccounts = accountsData.filter((a) => !a._isDemo);
+
+  if (realAccounts.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:18px;color:#94a3b8;">Chưa có tài khoản thật nào trên Supabase. Hãy dùng form ở trên để thêm mới.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = realAccounts
+    .map(
+      (acc) => `
+      <tr>
+        <td><b>#${escapeHtml(acc.code)}</b></td>
+        <td>${escapeHtml(acc.title)}</td>
+        <td>${formatVND(acc.price)}</td>
+        <td>${
+          acc.sold
+            ? '<span style="color:#f87171;font-weight:700;">Đã bán</span>'
+            : '<span style="color:#4ade80;font-weight:700;">Còn hàng</span>'
+        }</td>
+        <td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm" onclick="toggleSoldStatus(${acc.id})">${
+        acc.sold ? "Mở bán" : "Đã bán"
+      }</button>
+          <button type="button" class="btn btn-sm" onclick="startEditAccount(${acc.id})">Sửa</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteAccount(${acc.id})">Xóa</button>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+function scheduleRealtimeRefresh(fn) {
+  if (realtimeTimer) clearTimeout(realtimeTimer);
+  realtimeTimer = setTimeout(() => {
+    if (!isAdminModalOpen() && !isSavingAccount && !isSavingFolder && !isSavingSupport) {
+      fn();
+    }
+  }, 600);
+}
+
+function subscribeRealtime() {
+  if (!sbClient) return;
+
+  if (typeof sbClient.channel === "function") {
+    try {
+      sbClient
+        .channel("shop-realtime-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "accounts" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchAccounts(false, false));
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "account_folders" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchFolders());
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "support_events" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchSupportEvents());
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "shop_config" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchShopConfig());
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "reviews" },
+          () => {
+            scheduleRealtimeRefresh(() => fetchReviews());
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn("Không thể bật Realtime:", err);
+    }
+  }
+
+  setInterval(() => {
+    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount && !isSavingFolder && !isSavingSupport) {
+      fetchShopConfig();
+      fetchFolders();
+      fetchSupportEvents();
+      fetchAccounts(false, false);
+      fetchReviews();
+    }
+  }, 15000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !isAdminModalOpen() && !isSavingAccount && !isSavingFolder && !isSavingSupport) {
+      fetchShopConfig();
+      fetchFolders();
+      fetchSupportEvents();
+      fetchAccounts(false, false);
+      fetchReviews();
+    }
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const openBtn = e.target.closest("#openAdminBtn");
+  if (openBtn) {
+    e.preventDefault();
+    openAdminModal();
+    return;
+  }
+
+  const closeAdmin = e.target.closest("#closeAdminBtn");
+  if (closeAdmin) {
+    e.preventDefault();
+    closeAdminModal();
+    return;
+  }
+
+  const closeDetail = e.target.closest("#closeDetailBtn");
+  if (closeDetail) {
+    e.preventDefault();
+    closeDetailModal();
+    return;
+  }
+
+  const closeFolder = e.target.closest("#closeFolderBtn");
+  if (closeFolder) {
+    e.preventDefault();
+    closeFolderModal();
+    return;
+  }
+
+  const togglePass = e.target.closest("#togglePassBtn");
+  if (togglePass) {
+    e.preventDefault();
+    const passInput = document.getElementById("adminPassword");
+    if (passInput) {
+      const nextType = passInput.type === "password" ? "text" : "password";
+      passInput.type = nextType;
+      togglePass.textContent = nextType === "password" ? "👁️" : "🙈";
+    }
+  }
+});
+
+function bindEvents() {
+  document.querySelectorAll("[data-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-filter]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.getAttribute("data-filter") || "all";
+      renderAccounts();
+    });
+  });
+
+  document.querySelectorAll("[data-rank-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-rank-filter]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentRankFilter = btn.getAttribute("data-rank-filter") || "all";
+      renderAccounts();
+    });
+  });
+
+  const sortSelect = document.getElementById("sortSelect");
+  if (sortSelect) {
+    sortSelect.addEventListener("change", (e) => {
+      currentSort = e.target.value || "default";
+      renderAccounts();
+    });
+  }
+
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      searchKeyword = e.target.value || "";
+      renderAccounts();
+    });
+  }
+
+  const fileInput = document.getElementById("accFiles");
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      selectedUploadFiles = Array.from(e.target.files || []);
+      renderUploadPreviews();
+    });
+  }
+
+  const folderCoverInput = document.getElementById("fldCoverFile");
+  if (folderCoverInput) {
+    folderCoverInput.addEventListener("change", (e) => {
+      selectedFolderCoverFile = (e.target.files && e.target.files[0]) || null;
+    });
+  }
+
+  const syncNowBtn = document.getElementById("syncNowBtn");
+  if (syncNowBtn) {
+    syncNowBtn.addEventListener("click", async () => {
+      await Promise.all([
+        fetchShopConfig(),
+        fetchFolders(),
+        fetchSupportEvents(),
+        fetchAccounts(true, true),
+        fetchReviews()
+      ]);
+      showToast("Đã đồng bộ dữ liệu mới nhất từ Supabase.", "success");
+    });
+  }
+
+  const loginForm = document.getElementById("adminLoginForm");
+  if (loginForm) loginForm.addEventListener("submit", handleAdminLogin);
+
+  const logoutBtn = document.getElementById("adminLogoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", handleAdminLogout);
+
+  const folderForm = document.getElementById("folderForm");
+  if (folderForm) folderForm.addEventListener("submit", handleSaveFolder);
+
+  const cancelFolderEditBtn = document.getElementById("cancelFolderEditBtn");
+  if (cancelFolderEditBtn) cancelFolderEditBtn.addEventListener("click", resetFolderForm);
+
+  const supportForm = document.getElementById("supportForm");
+  if (supportForm) supportForm.addEventListener("submit", handleSaveSupport);
+
+  const cancelSupportEditBtn = document.getElementById("cancelSupportEditBtn");
+  if (cancelSupportEditBtn) cancelSupportEditBtn.addEventListener("click", resetSupportForm);
+
+  const accForm = document.getElementById("accountForm");
+  if (accForm) accForm.addEventListener("submit", handleSaveAccount);
+
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  if (cancelEditBtn) cancelEditBtn.addEventListener("click", resetAccountForm);
+
+  const cfgForm = document.getElementById("configForm");
+  if (cfgForm) cfgForm.addEventListener("submit", handleSaveConfig);
+
+  const reviewForm = document.getElementById("reviewForm");
+  if (reviewForm) reviewForm.addEventListener("submit", handleCreateReview);
+
+  const detailModal = document.getElementById("detailModal");
+  if (detailModal) {
+    detailModal.addEventListener("click", (e) => {
+      if (e.target === detailModal) closeDetailModal();
+    });
+  }
+
+  const folderModal = document.getElementById("folderModal");
+  if (folderModal) {
+    folderModal.addEventListener("click", (e) => {
+      if (e.target === folderModal) closeFolderModal();
+    });
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeDetailModal();
+      closeFolderModal();
+    }
+  });
+}
+
+async function initApp() {
+  bindEvents();
+  startOnlineCounter();
+  applyShopConfigToUI();
+  supportData = [...DEFAULT_SUPPORT_EVENTS];
+  accountsData = [...DEMO_ACCOUNTS];
+  reviewsData = loadLocalReviews();
+  renderFolders();
+  renderSupportEvents();
+  renderAccounts();
+  renderReviews();
+  updateStats();
+
+  try {
+    sbClient = createSupabaseInstance();
+    if (!sbClient) {
+      showToast("Chưa tải được thư viện Supabase.", "warning");
+      return;
+    }
+
+    const { data } = await sbClient.auth.getSession();
+    currentUser = data?.session?.user || null;
+    syncAuthUI();
+
+    sbClient.auth.onAuthStateChange((_event, session) => {
+      currentUser = session?.user || null;
+      syncAuthUI();
+    });
+
+    await Promise.all([
+      fetchShopConfig(),
+      fetchFolders(),
+      fetchSupportEvents(),
+      fetchAccounts(false, true),
+      fetchReviews()
+    ]);
+    subscribeRealtime();
+  } catch (err) {
+    console.error("Lỗi khởi tạo ứng dụng:", err);
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
