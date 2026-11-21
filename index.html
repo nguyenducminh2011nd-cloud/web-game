@@ -1382,4 +1382,98 @@
                 <option value="Không Rank">Không Rank</option>
                 <option value="Đồng">Đồng</option>
                 <option value="Bạc">Bạc</option>
-                <option value="Vàng">
+                <option value="Vàng">Vàng</option>
+                <option value="Bạch Kim">Bạch Kim</option>
+                <option value="Kim Cương">Kim Cương</option>
+                <option value="Tinh Anh">Tinh Anh</option>
+                <option value="Cao Thủ">Cao Thủ</option>
+                <option value="Chiến Tướng">Chiến Tướng</option>
+                <option value="Thách Đấu">Thách Đấu</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="accHeroes">Số tướng</label>
+              <input id="accHeroes" type="number" class="input" min="0" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="accSkins">Số trang phục</label>
+              <input id="accSkins" type="number" class="input" min="0" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="accInfo">Trạng thái bảo mật</label>
+              <input id="accInfo" type="text" class="input" placeholder="VD: Trắng thông tin" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="accFiles">Chọn ảnh từ thư viện điện thoại / máy tính (chọn được nhiều ảnh)</label>
+            <input id="accFiles" type="file" class="input" accept="image/*" multiple />
+            <div id="uploadPreviewList" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+          </div>
+
+          <div class="form-field">
+            <label for="accImages">Hoặc dán link ảnh (mỗi dòng 1 link hoặc cách nhau bởi dấu phẩy)</label>
+            <textarea id="accImages" rows="2" class="textarea" placeholder="https://..."></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="accDesc">Mô tả chi tiết</label>
+            <textarea id="accDesc" rows="2" class="textarea" placeholder="Mô tả thêm về acc..."></textarea>
+          </div>
+
+          <div class="form-field" style="flex-direction:row;align-items:center;gap:8px;">
+            <input id="accSold" type="checkbox" style="width:18px;height:18px;" />
+            <label for="accSold" style="margin:0;">Đánh dấu tài khoản này là ĐÃ BÁN</label>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="saveAccountBtn" type="submit" class="btn btn-primary">Thêm tài khoản mới</button>
+            <button id="cancelEditBtn" type="button" class="btn" style="display:none;">Hủy sửa</button>
+          </div>
+        </form>
+
+        <form id="configForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
+          <h3 style="margin:0 0 12px;font-size:1rem;">Cấu hình thông tin shop</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="cfgShopName">Tên shop</label>
+              <input id="cfgShopName" type="text" class="input" />
+            </div>
+            <div class="form-field">
+              <label for="cfgZaloPhone">Số Zalo hỗ trợ</label>
+              <input id="cfgZaloPhone" type="text" class="input" placeholder="VD: 0912345678" />
+            </div>
+            <div class="form-field">
+              <label for="cfgZalo">Link Zalo hỗ trợ</label>
+              <input id="cfgZalo" type="url" class="input" placeholder="https://zalo.me/..." />
+            </div>
+            <div class="form-field">
+              <label for="cfgFb">Link Facebook / Messenger</label>
+              <input id="cfgFb" type="url" class="input" placeholder="https://m.me/..." />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu cấu hình shop</button>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Tiêu đề</th>
+                <th>Giá</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminAccountsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js?v=9"></script>
+</body>
+</html>
