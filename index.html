@@ -420,6 +420,57 @@
       font-weight: 800;
     }
 
+    .support-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .support-card {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .support-tag {
+      display: inline-block;
+      width: fit-content;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fde047;
+      background: rgba(250, 204, 21, 0.14);
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+
+    .support-title {
+      margin: 0;
+      font-size: 1.02rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .support-desc {
+      margin: 0;
+      font-size: 0.86rem;
+      color: #cbd5e1;
+      white-space: pre-line;
+    }
+
+    .support-foot {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .toolbar {
       display: flex;
       flex-direction: column;
@@ -623,60 +674,6 @@
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
-    }
-
-    .support-event-section {
-      padding: 20px;
-      margin-bottom: 28px;
-    }
-
-    .support-event-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-    }
-
-    .support-event-header h2 {
-      margin: 0;
-      font-size: 1.15rem;
-      color: #f9a8d4;
-    }
-
-    .support-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .support-card {
-      background: rgba(7, 11, 20, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .support-status {
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 999px;
-      width: fit-content;
-      background: rgba(250, 204, 21, 0.15);
-      color: #fde047;
-    }
-
-    .support-status.done {
-      background: rgba(74, 222, 128, 0.15);
-      color: #4ade80;
     }
 
     .reviews-section {
@@ -890,9 +887,6 @@
         <a id="fbContactBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
           ⚡ Hỗ Trợ Messenger
         </a>
-        <a href="#chungSucSection" class="btn btn-gold">
-          🧧 Hỗ Trợ Chung Sức
-        </a>
         <button id="openAdminBtn" type="button" class="btn btn-primary">
           ⚙️ Quản Lý Shop
         </button>
@@ -918,9 +912,6 @@
         </a>
         <a id="mainMessBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess">
           ⚡ Hỗ Trợ Qua Messenger
-        </a>
-        <a href="#chungSucSection" class="btn btn-gold">
-          🧧 Hỗ Trợ Chung Sức Tết
         </a>
       </div>
 
@@ -958,12 +949,21 @@
       </div>
     </section>
 
+    <!-- 1. ACC CỜ NHON -->
     <div class="section-heading">
       <h2>🔥 ACC CỜ NHON</h2>
-      <span style="font-size:0.84rem;color:#94a3b8;">Chọn loại acc bên dưới để mua lẻ hoặc lấy cả lô giá ưu đãi</span>
+      <span style="font-size:0.84rem;color:#94a3b8;">Chọn loại acc cờ nhon bên dưới để mua lẻ hoặc chốt cả lô</span>
     </div>
     <section id="foldersGrid" class="folders-grid" aria-label="Acc cờ nhon"></section>
 
+    <!-- 2. HỖ TRỢ CHUNG SỨC (MÙA TẾT LIÊN QUÂN) -->
+    <div class="section-heading">
+      <h2>🤝 HỖ TRỢ CHUNG SỨC</h2>
+      <span style="font-size:0.84rem;color:#94a3b8;">Nhận kèo chung sức sự kiện Tết Liên Quân nhanh gọn, uy tín</span>
+    </div>
+    <section id="supportGrid" class="support-grid" aria-label="Hỗ trợ chung sức"></section>
+
+    <!-- 3. CÁC TÀI KHOẢN KHÁC -->
     <div class="section-heading">
       <h2>🎮 CÁC TÀI KHOẢN KHÁC</h2>
       <span id="activeFolderBanner" style="font-size:0.84rem;color:#38bdf8;"></span>
@@ -1014,50 +1014,6 @@
     </section>
 
     <section id="accountsGrid" class="accounts-grid" aria-live="polite"></section>
-
-    <!-- KHU VỰC HỖ TRỢ CHUNG SỨC TẾT LIÊN QUÂN -->
-    <section id="chungSucSection" class="support-event-section rgb-frame" aria-label="Hỗ trợ chung sức Liên Quân">
-      <div class="support-event-header">
-        <div>
-          <h2>🧧 HỖ TRỢ CHUNG SỨC LIÊN QUÂN</h2>
-          <p style="margin:4px 0 0;color:#94a3b8;font-size:0.88rem;">
-            Gửi link / mã chung sức sự kiện Tết Liên Quân để shop hỗ trợ nhanh hoặc gửi trực tiếp qua Zalo / Messenger.
-          </p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <a id="supportZaloBtn" href="https://zalo.me/" target="_blank" rel="noopener noreferrer" class="btn btn-zalo btn-sm">
-            💬 Gửi Zalo Chung Sức
-          </a>
-          <a id="supportMessBtn" href="https://m.me/" target="_blank" rel="noopener noreferrer" class="btn btn-mess btn-sm">
-            ⚡ Gửi Mess Chung Sức
-          </a>
-        </div>
-      </div>
-
-      <form id="supportForm" class="review-form-box" novalidate>
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="supName">Tên / Biệt danh (*)</label>
-            <input id="supName" type="text" class="input" placeholder="VD: Đức Minh" required />
-          </div>
-          <div class="form-field">
-            <label for="supEvent">Sự kiện</label>
-            <input id="supEvent" type="text" class="input" value="Chung sức Tết Liên Quân" />
-          </div>
-          <div class="form-field">
-            <label for="supLinkCode">Link hoặc mã chung sức (*)</label>
-            <input id="supLinkCode" type="text" class="input" placeholder="Dán link hoặc mã chung sức..." required />
-          </div>
-        </div>
-        <div class="form-field">
-          <label for="supNote">Ghi chú thêm (tuỳ chọn)</label>
-          <input id="supNote" type="text" class="input" placeholder="VD: Còn thiếu 2 lượt nữa là đủ mốc..." />
-        </div>
-        <button id="submitSupportBtn" type="submit" class="btn btn-gold">🧧 Gửi yêu cầu chung sức</button>
-      </form>
-
-      <div id="supportList" class="support-list"></div>
-    </section>
 
     <section class="reviews-section rgb-frame" aria-label="Đánh giá từ khách hàng">
       <div class="reviews-header">
@@ -1251,10 +1207,10 @@
           <div class="form-grid">
             <div class="form-field">
               <label for="fldCode">Mã gói / lô (*)</label>
-              <input id="fldCode" type="text" class="input" placeholder="VD: REG-NAKROTH" required />
+              <input id="fldCode" type="text" class="input" placeholder="VD: CN-NAKROTH" required />
             </div>
             <div class="form-field">
-              <label for="fldTitle">Tên loại acc (*)</label>
+              <label for="fldTitle">Tên loại acc cờ nhon (*)</label>
               <input id="fldTitle" type="text" class="input" placeholder="VD: Nakroth Lôi Quang Sứ Vippro" required />
             </div>
             <div class="form-field">
@@ -1319,12 +1275,12 @@
           </div>
 
           <div class="form-field">
-            <label for="fldBulkAccounts">Nhập nhanh danh sách acc vào gói này (mỗi dòng 1 acc: <code>ma_acc|tk:mk</code> hoặc chỉ <code>tk:mk</code> — hỗ trợ dán hàng trăm/nghìn dòng)</label>
-            <textarea id="fldBulkAccounts" rows="3" class="textarea" placeholder="VD:&#10;NAK01|user1:pass1&#10;NAK02|user2:pass2"></textarea>
+            <label for="fldBulkAccounts">Nhập nhanh danh sách acc vào gói này (mỗi dòng 1 acc: <code>ma_acc|tk:mk</code> hoặc chỉ <code>tk:mk</code>)</label>
+            <textarea id="fldBulkAccounts" rows="3" class="textarea" placeholder="VD:&#10;CN01|user1:pass1&#10;CN02|user2:pass2"></textarea>
           </div>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="saveFolderBtn" type="submit" class="btn btn-primary">Lưu gói acc</button>
+            <button id="saveFolderBtn" type="submit" class="btn btn-primary">Lưu gói acc cờ nhon</button>
             <button id="cancelFolderEditBtn" type="button" class="btn" style="display:none;">Hủy sửa gói</button>
           </div>
 
@@ -1344,14 +1300,67 @@
           </div>
         </form>
 
-        <!-- FORM THÊM / SỬA ACC LẺ -->
+        <!-- FORM THÊM / SỬA HỖ TRỢ CHUNG SỨC -->
+        <form id="supportForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(250,204,21,0.28);margin-bottom:18px;">
+          <h3 style="margin:0 0 12px;font-size:1rem;color:#fde047;">🤝 Thêm / Sửa Kèo Hỗ Trợ Chung Sức</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="supTitle">Tên gói / kèo chung sức (*)</label>
+              <input id="supTitle" type="text" class="input" placeholder="VD: Chung sức nhận quà Tết Liên Quân" required />
+            </div>
+            <div class="form-field">
+              <label for="supTag">Nhãn sự kiện</label>
+              <input id="supTag" type="text" class="input" placeholder="VD: Sự kiện Tết LQM" />
+            </div>
+            <div class="form-field">
+              <label for="supPrice">Phí / Giá (VNĐ - nhập 0 nếu free hoặc báo giá)</label>
+              <input id="supPrice" type="number" class="input" min="0" step="1000" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="supSlots">Slot còn nhận</label>
+              <input id="supSlots" type="number" class="input" min="0" value="20" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="supDesc">Nội dung &amp; lưu ý chung sức</label>
+            <textarea id="supDesc" rows="2" class="textarea" placeholder="VD: Hỗ trợ kéo mốc chung sức nhanh trong ngày Tết, gửi ID/thông tin rõ ràng..."></textarea>
+          </div>
+
+          <div class="form-field" style="flex-direction:row;align-items:center;gap:8px;">
+            <input id="supActive" type="checkbox" checked style="width:18px;height:18px;" />
+            <label for="supActive" style="margin:0;">Đang mở nhận kèo chung sức</label>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="saveSupportBtn" type="submit" class="btn btn-gold">Lưu kèo chung sức</button>
+            <button id="cancelSupportEditBtn" type="button" class="btn" style="display:none;">Hủy sửa kèo</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên kèo</th>
+                  <th>Giá</th>
+                  <th>Slot</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="adminSupportBody"></tbody>
+            </table>
+          </div>
+        </form>
+
+        <!-- FORM THÊM / SỬA CÁC TÀI KHOẢN KHÁC -->
         <form id="accountForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
-          <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản (Các tài khoản khác)</h3>
+          <h3 style="margin:0 0 12px;font-size:1rem;">Thêm / Chỉnh sửa tài khoản khác</h3>
           <div class="form-grid">
             <div class="form-field">
               <label for="accFolderId">Thuộc gói acc cờ nhon (tuỳ chọn)</label>
               <select id="accFolderId" class="select">
-                <option value="">-- Không thuộc gói (Các tài khoản khác) --</option>
+                <option value="">-- Không thuộc gói (Tài khoản khác) --</option>
               </select>
             </div>
             <div class="form-field">
@@ -1373,98 +1382,4 @@
                 <option value="Không Rank">Không Rank</option>
                 <option value="Đồng">Đồng</option>
                 <option value="Bạc">Bạc</option>
-                <option value="Vàng">Vàng</option>
-                <option value="Bạch Kim">Bạch Kim</option>
-                <option value="Kim Cương">Kim Cương</option>
-                <option value="Tinh Anh">Tinh Anh</option>
-                <option value="Cao Thủ">Cao Thủ</option>
-                <option value="Chiến Tướng">Chiến Tướng</option>
-                <option value="Thách Đấu">Thách Đấu</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label for="accHeroes">Số tướng</label>
-              <input id="accHeroes" type="number" class="input" min="0" value="0" />
-            </div>
-            <div class="form-field">
-              <label for="accSkins">Số trang phục</label>
-              <input id="accSkins" type="number" class="input" min="0" value="0" />
-            </div>
-            <div class="form-field">
-              <label for="accInfo">Trạng thái bảo mật</label>
-              <input id="accInfo" type="text" class="input" placeholder="VD: Trắng thông tin" />
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label for="accFiles">Chọn ảnh từ thư viện điện thoại / máy tính (chọn được nhiều ảnh)</label>
-            <input id="accFiles" type="file" class="input" accept="image/*" multiple />
-            <div id="uploadPreviewList" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
-          </div>
-
-          <div class="form-field">
-            <label for="accImages">Hoặc dán link ảnh (mỗi dòng 1 link hoặc cách nhau bởi dấu phẩy)</label>
-            <textarea id="accImages" rows="2" class="textarea" placeholder="https://..."></textarea>
-          </div>
-
-          <div class="form-field">
-            <label for="accDesc">Mô tả chi tiết</label>
-            <textarea id="accDesc" rows="2" class="textarea" placeholder="Mô tả thêm về acc..."></textarea>
-          </div>
-
-          <div class="form-field" style="flex-direction:row;align-items:center;gap:8px;">
-            <input id="accSold" type="checkbox" style="width:18px;height:18px;" />
-            <label for="accSold" style="margin:0;">Đánh dấu tài khoản này là ĐÃ BÁN</label>
-          </div>
-
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="saveAccountBtn" type="submit" class="btn btn-primary">Thêm tài khoản mới</button>
-            <button id="cancelEditBtn" type="button" class="btn" style="display:none;">Hủy sửa</button>
-          </div>
-        </form>
-
-        <form id="configForm" novalidate style="background:rgba(7,11,20,0.78);padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,0.16);margin-bottom:18px;">
-          <h3 style="margin:0 0 12px;font-size:1rem;">Cấu hình thông tin shop</h3>
-          <div class="form-grid">
-            <div class="form-field">
-              <label for="cfgShopName">Tên shop</label>
-              <input id="cfgShopName" type="text" class="input" />
-            </div>
-            <div class="form-field">
-              <label for="cfgZaloPhone">Số Zalo hỗ trợ</label>
-              <input id="cfgZaloPhone" type="text" class="input" placeholder="VD: 0912345678" />
-            </div>
-            <div class="form-field">
-              <label for="cfgZalo">Link Zalo hỗ trợ</label>
-              <input id="cfgZalo" type="url" class="input" placeholder="https://zalo.me/..." />
-            </div>
-            <div class="form-field">
-              <label for="cfgFb">Link Facebook / Messenger</label>
-              <input id="cfgFb" type="url" class="input" placeholder="https://m.me/..." />
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary">Lưu cấu hình shop</button>
-        </form>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Mã</th>
-                <th>Tiêu đề</th>
-                <th>Giá</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="adminAccountsBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js?v=9"></script>
-</body>
-</html>
+                <option value="Vàng">
